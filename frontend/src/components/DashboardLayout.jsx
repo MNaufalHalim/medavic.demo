@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 
 const DashboardLayout = ({ children }) => {
   const [menus, setMenus] = useState([]);
@@ -16,13 +17,13 @@ const DashboardLayout = ({ children }) => {
           return;
         }
 
-        const userResponse = await axios.get('http://localhost:5000/api/auth/me', {
+        const userResponse = await axios.get(`${config.apiUrl}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         setUser(userResponse.data.data);
 
-        const menuResponse = await axios.get(`http://localhost:5000/api/role-permissions/${userResponse.data.data.role_id}`, {
+        const menuResponse = await axios.get(`${config.apiUrl}/role-permissions/${userResponse.data.data.role_id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

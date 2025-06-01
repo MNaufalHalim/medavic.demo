@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import axios from 'axios';
+import config from '../../config';
 import { 
   User, Calendar, Phone, Mail, Award, Clock, 
   CheckCircle, XCircle, Plus, Trash2, Save, 
@@ -36,7 +37,7 @@ const Dokter = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get('http://localhost:5000/api/master/doctors', {
+      const response = await axios.get(`${config.apiUrl}/master/doctors`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.data.status === 'success') {
@@ -59,7 +60,7 @@ const Dokter = () => {
 
   const fetchSchedules = async (doctorId) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/master/doctor-schedules?doctor_id=${doctorId}`, {
+      const res = await axios.get(`${config.apiUrl}/master/doctor-schedules?doctor_id=${doctorId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       const data = res.data.data || {};
@@ -119,7 +120,7 @@ const Dokter = () => {
     setLoading(true); setError(''); setSuccess('');
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/master/doctors/${editDoctor.id}`,
+        `${config.apiUrl}/master/doctors/${editDoctor.id}`,
         editDoctor,
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
@@ -129,13 +130,13 @@ const Dokter = () => {
         // save schedule changes
         await Promise.all([
           ...removedScheduleIds.map(id => axios.delete(
-            `http://localhost:5000/api/master/doctor-schedules/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            `${config.apiUrl}/master/doctor-schedules/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
           )),
           ...scheduleEntries.filter(e => e.id).map(e => axios.put(
-            `http://localhost:5000/api/master/doctor-schedules/${e.id}`, e, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            `${config.apiUrl}/master/doctor-schedules/${e.id}`, e, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
           )),
           ...scheduleEntries.filter(e => !e.id).map(e => axios.post(
-            `http://localhost:5000/api/master/doctor-schedules`, { ...e, doctor_id: editDoctor.id }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            `${config.apiUrl}/master/doctor-schedules`, { ...e, doctor_id: editDoctor.id }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
           ))
         ]);
         fetchSchedules(editDoctor.id);
@@ -150,7 +151,7 @@ const Dokter = () => {
     setLoading(true); setError(''); setSuccess('');
     try {
       const response = await axios.delete(
-        `http://localhost:5000/api/master/doctors/${selectedDoctor.id}`,
+        `${config.apiUrl}/master/doctors/${selectedDoctor.id}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
       if (response.data.status === 'success') {

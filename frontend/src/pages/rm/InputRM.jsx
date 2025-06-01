@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import axios from 'axios';
+import config from '../../config';
 import PageTemplate from '../../components/PageTemplate';
 import { format } from 'date-fns';
-import axios from 'axios';
 import Select from 'react-select';
 import { 
   UserCircle, 
@@ -126,7 +127,7 @@ const MedicalRecordModal = ({ type, title, show, onClose, onSave, selectedItems,
         console.error('No token found in localStorage');
         return [];
       }
-      const response = await axios.get(`http://localhost:5000/api/medical/medication-presets/${medicationId}`, {
+      const response = await axios.get(`${config.apiUrl}/medical/medication-presets/${medicationId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data.success) {
@@ -556,13 +557,13 @@ const InputRM = () => {
       let endpoint = '';
       switch (type) {
         case 'procedure':
-          endpoint = `http://localhost:5000/api/medical/procedures/search?search=${term}`;
+          endpoint = `${config.apiUrl}/medical/procedures/search?search=${term}`;
           break;
         case 'medication':
-          endpoint = `http://localhost:5000/api/medical/medications/search?search=${term}`;
+          endpoint = `${config.apiUrl}/medical/medications/search?search=${term}`;
           break;
         case 'diagnose':
-          endpoint = `http://localhost:5000/api/medical/diagnoses/search?search=${term}`;
+          endpoint = `${config.apiUrl}/medical/diagnoses/search?search=${term}`;
           break;
         default:
           throw new Error('Tipe tidak valid');
@@ -613,7 +614,7 @@ const InputRM = () => {
           setError('Tidak ada kunjungan untuk pasien ini. Silakan buat kunjungan terlebih dahulu.');
           return;
         }
-        const endpoint = `http://localhost:5000/api/medical/visit-${type}s`;
+        const endpoint = `${config.apiUrl}/medical/visit-${type}s`;
         const response = await axios.post(endpoint, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -752,7 +753,7 @@ const InputRM = () => {
           blood_sugar: tempVitals.bloodSugar,
           temperature: tempVitals.temperature,
         };
-        await axios.post('http://localhost:5000/api/medical/editvitals', payload, {
+        await axios.post(`${config.apiUrl}/medical/editvitals`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
         onSave({
@@ -831,7 +832,7 @@ const InputRM = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/medical/patients/search?search=${term}`, {
+      const response = await axios.get(`${config.apiUrl}/medical/patients/search?search=${term}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data.success) {
@@ -909,7 +910,7 @@ const InputRM = () => {
       const token = localStorage.getItem('token');
       
       // Using the getWaitingPatients endpoint with date filter
-      const response = await axios.post('http://localhost:5000/api/medical/patients/waiting', 
+      const response = await axios.post(`${config.apiUrl}/medical/patients/waiting`, 
         { date: dateFilter },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -953,7 +954,7 @@ const InputRM = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const combinedResponse = await axios.get(`http://localhost:5000/api/medical/patients/${patientNoRM}/combined-data`, {
+      const combinedResponse = await axios.get(`${config.apiUrl}/medical/patients/${patientNoRM}/combined-data`, {
         headers: { Authorization: `Bearer ${token}` },
       });
   
@@ -1001,7 +1002,7 @@ const InputRM = () => {
         setError('Gagal mengambil data pasien: Data tidak ditemukan.');
       }
   
-      const visitsResponse = await axios.get(`http://localhost:5000/api/medical/patients/${patientNoRM}/visits`, {
+      const visitsResponse = await axios.get(`${config.apiUrl}/medical/patients/${patientNoRM}/visits`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (visitsResponse.data.success && visitsResponse.data.data) {

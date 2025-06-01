@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../../config';
 import Layout from '../../components/Layout';
 import { Shield, Save, Plus, Edit2, Trash2 } from 'lucide-react';
 
@@ -20,10 +21,10 @@ const RolePrivilegeManagement = () => {
   const fetchRolesAndMenus = async () => {
     try {
       const [rolesRes, menusRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/roles', {
+        axios.get(`${config.apiUrl}/roles`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }),
-        axios.get('http://localhost:5000/api/menus', {
+        axios.get(`${config.apiUrl}/menus`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
@@ -38,7 +39,7 @@ const RolePrivilegeManagement = () => {
 
   const fetchPrivileges = async (roleId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/roles/${roleId}/privilege`, {
+      const response = await axios.get(`${config.apiUrl}/roles/${roleId}/privilege`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setPrivileges(response.data.data);
@@ -84,7 +85,7 @@ const RolePrivilegeManagement = () => {
       }));
 
       await axios.post(
-        `http://localhost:5000/api/roles/${selectedRole.id}/privilege`,
+        `${config.apiUrl}/roles/${selectedRole.id}/privileges`,
         { privileges: privilegeArray },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );

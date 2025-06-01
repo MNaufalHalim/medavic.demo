@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import axios from 'axios';
+import config from '../../config';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Calendar, Search, Pill, Clock, User, CheckCircle, XCircle, Plus, Trash2, Save } from 'lucide-react';
@@ -53,7 +54,7 @@ const ResepObat = () => {
     try {
       const formattedDate = selectedDate.toISOString().split('T')[0];
       console.log('Fetching patients for date:', formattedDate);
-      const response = await axios.get(`http://localhost:5000/api/billing/patients?date=${formattedDate}`, {
+      const response = await axios.get(`${config.apiUrl}/billing/patients?date=${formattedDate}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.data.success) {
@@ -77,7 +78,7 @@ const ResepObat = () => {
 
   const fetchMedicines = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/billing/medicines', {
+      const response = await axios.get(`${config.apiUrl}/billing/medicines`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.data.success) setMedicines(response.data.data || []);
@@ -90,7 +91,7 @@ const ResepObat = () => {
   const fetchVisitMedications = async (visitId) => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5000/api/billing/visit/${visitId}/medications`, {
+      const response = await axios.get(`${config.apiUrl}/billing/visit/${visitId}/medications`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.data.success) {
@@ -214,7 +215,7 @@ const ResepObat = () => {
       ].filter(m => m.quantity > 0);
 
       const response = await axios.post(
-        `http://localhost:5000/api/billing/visit/${selectedPatient.visit_id}/medications`,
+        `${config.apiUrl}/billing/visit/${selectedPatient.visit_id}/medications`,
         { medications: updatedMeds },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );

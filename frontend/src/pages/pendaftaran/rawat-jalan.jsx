@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { id } from 'date-fns/locale';
 import axios from 'axios';
+import config from '../../config';
 import Select from 'react-select';
 import { 
   X, 
@@ -252,7 +253,7 @@ const RawatJalan = () => {
   const fetchAppointments = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/rm/appointments', {
+      const response = await axios.get(`${config.apiUrl}/rm/appointments`, {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           start_date: format(dateRange.start, 'yyyy-MM-dd'),
@@ -293,7 +294,7 @@ const RawatJalan = () => {
   const fetchDoctors = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/master/doctors', {
+      const response = await axios.get(`${config.apiUrl}/master/doctors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
   
@@ -323,7 +324,7 @@ const RawatJalan = () => {
   const fetchDoctorSchedule = async (doctorId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/master/doctor-schedules', {
+      const response = await axios.get(`${config.apiUrl}/master/doctor-schedules`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { doctor_id: doctorId }
       });
@@ -379,7 +380,7 @@ const RawatJalan = () => {
           no_telepon: newAppointment.no_telepon,
           email: newAppointment.email
         };
-        const patientResponse = await axios.post('http://localhost:5000/api/rm/register', patientData, {
+        const patientResponse = await axios.post(`${config.apiUrl}/rm/register`, patientData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (patientResponse.data.status !== 'success') {
@@ -422,7 +423,7 @@ const RawatJalan = () => {
       };
 
       console.log('Sending Appointment Data:', appointmentData);
-      const response = await axios.post('http://localhost:5000/api/rm/appointments', appointmentData, {
+      const response = await axios.post(`${config.apiUrl}/rm/appointments`, appointmentData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Create Appointment Response:', response.data);
@@ -480,7 +481,7 @@ const RawatJalan = () => {
       console.log('Updating appointment with data:', appointmentData);
 
       const response = await axios.put(
-        `http://localhost:5000/api/rm/appointments/${selectedAppointment.appointment_code}`,
+        `${config.apiUrl}/rm/appointments/${selectedAppointment.appointment_code}`,
         appointmentData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -506,7 +507,7 @@ const RawatJalan = () => {
   const handleDeleteAppointment = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/rm/appointments/${selectedAppointment.appointment_code}`, {
+      await axios.delete(`${config.apiUrl}/rm/appointments/${selectedAppointment.appointment_code}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchAppointments();
@@ -640,7 +641,7 @@ const RawatJalan = () => {
   
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/rm/search', {
+      const response = await axios.get(`${config.apiUrl}/rm/search`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { keyword: searchTerm }
       });

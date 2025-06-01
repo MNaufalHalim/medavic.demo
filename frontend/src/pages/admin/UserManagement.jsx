@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../../config';
 
 const formatDate = (dateString) => {
   if (!dateString) return '-';
@@ -59,7 +60,7 @@ const UserManagement = () => {
         return;
       }
   
-      const response = await axios.get('http://localhost:5000/api/users', {
+      const response = await axios.get(`${config.apiUrl}/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -88,7 +89,7 @@ const UserManagement = () => {
   const fetchRoles = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/roles', {
+      const response = await axios.get(`${config.apiUrl}/roles`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRoles(response.data.data);
@@ -113,7 +114,7 @@ const UserManagement = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/users/${id}`, {
+        await axios.delete(`${config.apiUrl}/users/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchUsers();
@@ -129,12 +130,12 @@ const UserManagement = () => {
       const token = localStorage.getItem('token');
       if (selectedUser) {
         // Update existing user
-        await axios.put(`http://localhost:5000/api/users/${selectedUser.id}`, formData, {
+        await axios.put(`${config.apiUrl}/users/${selectedUser.id}`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
         // Create new user
-        await axios.post('http://localhost:5000/api/users', formData, {
+        await axios.post(`${config.apiUrl}/users`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }

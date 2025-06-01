@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../config';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 
 const Users = () => {
@@ -16,7 +17,7 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('/api/users');
+      const response = await axios.get(`${config.apiUrl}/users`);
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -41,7 +42,7 @@ const Users = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        await axios.delete(`/api/users/${id}`);
+        await axios.delete(`${config.apiUrl}/users/${id}`);
         fetchUsers();
       } catch (error) {
         console.error('Error deleting user:', error);
@@ -53,9 +54,9 @@ const Users = () => {
     e.preventDefault();
     try {
       if (selectedUser) {
-        await axios.put(`/api/users/${selectedUser._id}`, formData);
+        await axios.put(`${config.apiUrl}/users/${selectedUser._id}`, formData);
       } else {
-        await axios.post('/api/users', formData);
+        await axios.post(`${config.apiUrl}/users`, formData);
       }
       setIsModalOpen(false);
       setSelectedUser(null);

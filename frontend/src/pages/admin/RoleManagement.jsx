@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { apiUrl } from '../../config/api';
 import { 
   Shield, Save, Plus, X, Trash2, ChevronDown, ChevronRight, 
   Settings, Users, ClipboardList, FileText, Home, User, 
@@ -40,10 +41,10 @@ const RoleManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const [rolesRes, menusRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/roles', {
+        axios.get(apiUrl('api/roles'), {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get('http://localhost:5000/api/menus', {  // Changed from /api/menu to /api/menus
+        axios.get(apiUrl('api/menus'), {  // Changed from /api/menu to /api/menus
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -68,7 +69,7 @@ const RoleManagement = () => {
   const fetchPrivileges = async (roleId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/roles/${roleId}/privilege`, {
+      const response = await axios.get(apiUrl(`api/roles/${roleId}/privilege`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -122,7 +123,7 @@ const RoleManagement = () => {
       }));
 
       await axios.post(
-        `http://localhost:5000/api/roles/${selectedRole.id}/privilege`,
+        apiUrl(`api/roles/${selectedRole.id}/privilege`),
         { privileges: privilegeArray },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -138,11 +139,11 @@ const RoleManagement = () => {
     try {
       const token = localStorage.getItem('token');
       if (modalMode === 'create') {
-        await axios.post('http://localhost:5000/api/roles', roleForm, {
+        await axios.post(apiUrl('api/roles'), roleForm, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.put(`http://localhost:5000/api/roles/${selectedRole.id}`, roleForm, {
+        await axios.put(apiUrl(`api/roles/${selectedRole.id}`), roleForm, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -161,7 +162,7 @@ const RoleManagement = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/roles/${role.id}`, {
+      await axios.delete(apiUrl(`api/roles/${role.id}`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchRolesAndMenus();

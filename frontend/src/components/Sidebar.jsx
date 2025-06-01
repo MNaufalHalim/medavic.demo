@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 import { 
   Home, Database, FileText, UserPlus, CreditCard,
   Users, ChartBar, Settings, User, Stethoscope,
@@ -168,7 +169,7 @@ const Sidebar = ({ collapsed, onLogout }) => {
         return;
       }
 
-      const response = await axios.get(`http://localhost:5000/api/menus/user`, {
+      const response = await axios.get(`${config.apiUrl}/menus/user`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
