@@ -10,14 +10,15 @@ const dbConfig = isProduction ? {
   host: '44o1s.h.filess.io',
   port: 61002,
   user: 'medavic_excepthad',
-  password: process.env.DB_PASSWORD || '********************', // Password should be set in Railway environment variables
+  password: '5e76fe4e3d11e38b36726a4cebb4ca841e9ed78b', // Hardcoded for now, should be moved to environment variables
   database: 'medavic_excepthad',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  ssl: {
-    rejectUnauthorized: false // Sometimes needed for cloud database connections
-  }
+  ssl: false, // Disable SSL for filess.io
+  connectTimeout: 60000, // Increase connection timeout
+  acquireTimeout: 60000, // Increase acquire timeout
+  timeout: 60000 // Increase query timeout
 } : {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
