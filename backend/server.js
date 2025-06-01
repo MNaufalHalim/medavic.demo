@@ -10,7 +10,17 @@ const app = express();
 
 // Security
 app.use(helmet());
-app.use(cors());
+
+// Configure CORS to allow requests from frontend domains
+app.use(cors({
+  origin: [
+    'http://localhost:5173', // Local development frontend
+    'https://medavic-demo.netlify.app', // Production frontend
+    'https://medavic.netlify.app' // Alternative production frontend
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Rate limiting
 const limiter = rateLimit({

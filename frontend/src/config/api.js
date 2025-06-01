@@ -2,6 +2,11 @@ import config from '../config';
 
 // Konfigurasi API URL berdasarkan environment
 const getApiBaseUrl = () => {
+  // Selalu gunakan production API URL jika forceProduction diaktifkan
+  if (config.forceProduction) {
+    return config.productionApiUrl;
+  }
+  
   // Untuk production (Netlify)
   if (import.meta.env.PROD) {
     // Gunakan URL backend yang di-deploy dari config.js
