@@ -231,7 +231,7 @@ const RoleManagement = () => {
       'Aktivitas': <Activity size={size} />,
       'Pendaftaran Pasien': <FilePlus size={size} />,
       'Kunjungan': <FileCheck size={size} />,
-      'Rekam Medis': <FileSearch size={size} />,
+      'Input Rekam Medis': <FileSearch size={size} />,
       'Riwayat': <FileClock size={size} />,
     };
     return menuIcons[menuName] || <ClipboardList size={size} />;
