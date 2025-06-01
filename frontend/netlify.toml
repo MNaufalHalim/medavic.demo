@@ -2,7 +2,15 @@
   command = "npm run build"
   publish = "dist"
 
-# Pengaturan untuk SPA routing
+# Proxy API requests to Railway backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://medavicdemo-production.up.railway.app/api/:splat"
+  status = 200
+  force = true
+  headers = {Access-Control-Allow-Origin = "*"}
+
+# Pengaturan untuk SPA routing (must come after the API redirect)
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -16,3 +24,6 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Origin, X-Requested-With, Content-Type, Accept, Authorization"

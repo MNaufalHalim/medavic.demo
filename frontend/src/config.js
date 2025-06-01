@@ -3,8 +3,8 @@ const config = {
   // Local development API URL
   localApiUrl: 'http://localhost:5000/api',
   
-  // Production API URL (deployed backend)
-  productionApiUrl: 'https://medavicdemo-production.up.railway.app/api', // Railway deployed backend URL
+  // Production API URL - using Netlify's proxy to avoid CORS issues
+  productionApiUrl: '/api', // Using relative URL to leverage Netlify's proxy
   
   // When using ngrok, replace this with your ngrok backend URL
   // Example: 'https://abcd-123-456-789.ngrok.io/api'
