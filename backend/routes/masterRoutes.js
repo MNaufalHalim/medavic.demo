@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const masterController = require('../controllers/masterController');
-const authMiddleware = require('../middleware/authmiddleware');
+const authMiddleware = require('../middleware/authMiddleware');
 
 //Pasien
 router.get('/patients/search', authMiddleware, masterController.searchPatients);
