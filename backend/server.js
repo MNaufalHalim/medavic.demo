@@ -23,6 +23,11 @@ app.use(limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Health check endpoint for Railway
+app.get('/', (req, res) => {
+  res.status(200).send('Health check passed - MEDAVIC API is running');
+});
+
 // Routes
 app.use('/api', require('./routes'));
 
@@ -37,8 +42,8 @@ app.use(errorHandler);
 initializeDatabase()
   .then(() => {
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server berjalan di port ${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server berjalan di port ${PORT} on 0.0.0.0`);
     });
   })
   .catch(err => {
