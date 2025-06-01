@@ -5,9 +5,9 @@ const validateRequest = require('../middleware/validation');
 const schemas = require('../schemas/validation');
 
 // Import controllers
-const userController = require('../controllers/usercontroller');
+const userController = require('../controllers/userController');
 const menuController = require('../controllers/menuController');
-const roleController = require('../controllers/rolecontroller');
+const roleController = require('../controllers/roleController');
 const patientController = require('../controllers/patientController');
 const doctorController = require('../controllers/masterController'); // Tambahkan ini
 const billingController = require('../controllers/billingController'); // Tambahkan ini
