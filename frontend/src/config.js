@@ -4,7 +4,7 @@ const config = {
   localApiUrl: 'http://localhost:5000/api',
   
   // Production API URL (deployed backend)
-  productionApiUrl: 'https://medavicdemo-production.up.railway.app', // Railway deployed backend URL
+  productionApiUrl: 'https://medavicdemo-production.up.railway.app/api', // Railway deployed backend URL
   
   // When using ngrok, replace this with your ngrok backend URL
   // Example: 'https://abcd-123-456-789.ngrok.io/api'
