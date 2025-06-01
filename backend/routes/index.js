@@ -13,19 +13,19 @@ const doctorController = require('../controllers/masterController'); // Tambahka
 const billingController = require('../controllers/billingController'); // Tambahkan ini
 
 // Auth routes
-router.use('/auth', require('./authroutes'));
+router.use('/auth', require('./authRoutes'));
 
 // Protected routes
 router.use(authMiddleware);
 
 // User routes
-router.use('/users', require('./userroutes'));
+router.use('/users', require('./userRoutes'));
 
 // Menu routes
 router.use('/menus', require('./menuRoutes'));
 
 // Role routes 
-router.use('/roles', require('./roleroutes'));
+router.use('/roles', require('./roleRoutes'));
 
 // Patient routes
 router.use('/patients', require('./patientRoutes'));
