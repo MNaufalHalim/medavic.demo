@@ -64,10 +64,14 @@ app.use(errorHandler);
 // Database initialization
 initializeDatabase()
   .then(() => {
-    // Use port 5000 for local development
-    const PORT = 5000;
+    // Use PORT from environment variable (Railway sets this automatically)
+    // or fallback to 5000 for local development
+    const PORT = process.env.PORT || 5000;
+    
+    // Listen on all network interfaces (0.0.0.0) for compatibility with Railway
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server berjalan di port ${PORT} on 0.0.0.0`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   })
   .catch(err => {
