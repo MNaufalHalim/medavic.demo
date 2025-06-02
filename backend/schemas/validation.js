@@ -22,9 +22,21 @@ const schemas = {
     })
   },
   user: {
-    create: Joi.object({}),
-    update: Joi.object({}),
-    setRole: Joi.object({})
+    create: Joi.object({
+      username: Joi.string().required(),
+      password: Joi.string().required(),
+      full_name: Joi.string().required(),
+      role_id: Joi.number().required()
+    }),
+    update: Joi.object({
+      username: Joi.string().optional(),
+      password: Joi.string().optional(),
+      full_name: Joi.string().optional(),
+      role_id: Joi.number().optional()
+    }),
+    setRole: Joi.object({
+      role_id: Joi.number().required()
+    })
   },
   doctor: {
     create: Joi.object({}),

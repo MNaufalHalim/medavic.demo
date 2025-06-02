@@ -15,10 +15,11 @@ const config = {
   
   // Force production mode to always use the Railway backend
   // Set this to true to always use the production API URL regardless of environment
-  forceProduction: true,
+  // Set to false for local development
+  forceProduction: false,
   
   // Automatically detect if we're in production mode
-  isProduction: import.meta.env.PROD || true,
+  isProduction: import.meta.env.PROD,
   
   // The API URL to use based on environment and settings
   get apiUrl() {

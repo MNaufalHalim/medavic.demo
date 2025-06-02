@@ -15,11 +15,11 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-// Configure CORS to allow requests from frontend domains
+// Configure CORS to allow all requests during development
 app.use(cors({
-  origin: '*', // Allow all origins for now to troubleshoot CORS issues
+  origin: '*', // Allow all origins during development
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
   credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204
@@ -64,7 +64,8 @@ app.use(errorHandler);
 // Database initialization
 initializeDatabase()
   .then(() => {
-    const PORT = process.env.PORT || 5000;
+    // Use port 5000 for local development
+    const PORT = 5000;
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server berjalan di port ${PORT} on 0.0.0.0`);
     });

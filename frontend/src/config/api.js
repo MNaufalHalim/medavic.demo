@@ -21,13 +21,15 @@ export const API_BASE_URL = getApiBaseUrl();
 
 // Helper untuk membuat URL API lengkap
 export const apiUrl = (endpoint) => {
-  // Jika endpoint sudah berisi 'api/', jangan tambahkan lagi
-  if (endpoint.includes('api/')) {
-    return `${API_BASE_URL.replace('/api', '')}/${endpoint}`;
-  }
-  
   // Pastikan endpoint tidak dimulai dengan '/'
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+  
+  // Untuk development (localhost), gunakan full URL dengan port 5000
+  if (!import.meta.env.PROD) {
+    return `http://localhost:5000/api/${formattedEndpoint}`;
+  }
+  
+  // Untuk production (Netlify), gunakan relative URL untuk proxy
   return `${API_BASE_URL}/${formattedEndpoint}`;
 };
 
