@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const bcrypt = require('bcryptjs');
 
 const userController = {
   getAllUsers: async (req, res) => {
@@ -38,12 +39,19 @@ const userController = {
       // Check if username exists
       const [existing] = await pool.query('SELECT id FROM sys_user WHERE username = ?', [username]);
       if (existing.length > 0) {
-        return res.status(400).json({ message: 'Username already exists' });
+        return res.status(400).json({ 
+          status: 'error',
+          message: 'Username already exists' 
+        });
       }
+
+      // Hash the password before storing it
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
       const [result] = await pool.query(
         'INSERT INTO sys_user (username, password, full_name, role_id) VALUES (?, ?, ?, ?)',
-        [username, password, full_name, role_id]
+        [username, hashedPassword, full_name, role_id]
       );
       
       res.status(201).json({
@@ -61,9 +69,23 @@ const userController = {
     const { username, password, full_name, role_id } = req.body;
     try {
       let query, values;
+      
+      // Check if username exists for another user
+      const [existing] = await pool.query('SELECT id FROM sys_user WHERE username = ? AND id != ?', [username, id]);
+      if (existing.length > 0) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Username already exists'
+        });
+      }
+      
       if (password) {
+        // Hash the password before storing it
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
         query = 'UPDATE sys_user SET username = ?, password = ?, full_name = ?, role_id = ? WHERE id = ?';
-        values = [username, password, full_name, role_id, id];
+        values = [username, hashedPassword, full_name, role_id, id];
       } else {
         query = 'UPDATE sys_user SET username = ?, full_name = ?, role_id = ? WHERE id = ?';
         values = [username, full_name, role_id, id];
