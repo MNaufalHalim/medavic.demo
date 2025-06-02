@@ -58,10 +58,6 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api', require('./routes'));
 
-// Billing routes
-const billingRoutes = require('./routes/billingRoutes');
-app.use('/api/billing', billingRoutes);
-
 // Error handling
 app.use(errorHandler);
 
