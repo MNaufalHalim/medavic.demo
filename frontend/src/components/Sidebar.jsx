@@ -178,42 +178,47 @@ const Sidebar = ({ collapsed, onLogout }) => {
         const seenIds = new Set();
         
         const processedMenus = response.data.data
-          .filter(menu => {
-            // Filter out menus with duplicate IDs
-            if (!menu.id || !menu.menu_name || seenIds.has(menu.id)) {
-              return false;
-            }
-            seenIds.add(menu.id);
-            return true;
-          })
-          .map(menu => {
-            // Create a Set for child IDs within this menu
-            const seenChildIds = new Set();
-            
-            return {
-              id: menu.id,
-              menu_name: menu.menu_name,
-              menu_path: menu.menu_path,
-              icon: menu.icon?.toLowerCase() || 'dashboard',
-              order_number: menu.order_number,
-              children: (menu.children || [])
-                .filter(child => {
-                  // Filter out children with duplicate IDs
-                  if (!child || !child.id || !child.menu_name || seenChildIds.has(child.id)) {
-                    return false;
-                  }
-                  seenChildIds.add(child.id);
-                  return true;
-                })
-                .map(child => ({
-                  id: `${menu.id}_${child.id}`, // Create unique composite key
-                  menu_name: child.menu_name,
-                  menu_path: child.menu_path,
-                  icon: child.icon?.toLowerCase() || menu.icon?.toLowerCase() || 'dashboard'
-                }))
-            };
-          })
-          .sort((a, b) => (a.order_number || 0) - (b.order_number || 0));
+        .filter(menu => {
+          // Filter out menus with duplicate IDs
+          if (!menu.id || !menu.menu_name || seenIds.has(menu.id)) {
+            return false;
+          }
+          seenIds.add(menu.id);
+          return true;
+        })
+        .map(menu => {
+          // Create a Set for child IDs within this menu
+          const seenChildIds = new Set();
+          
+          return {
+            id: menu.id,
+            menu_name: menu.menu_name,
+            menu_path: menu.menu_path,
+            icon: menu.icon?.toLowerCase() || 'dashboard',
+            order_number: menu.order_number || 999, // Default high number if not specified
+            parent_id: menu.parent_id,
+            children: (menu.children || [])
+              .filter(child => {
+                // Filter out children with duplicate IDs
+                if (!child || !child.id || !child.menu_name || seenChildIds.has(child.id)) {
+                  return false;
+                }
+                seenChildIds.add(child.id);
+                return true;
+              })
+              .map(child => ({
+                id: `${menu.id}_${child.id}`, // Create unique composite key
+                menu_name: child.menu_name,
+                menu_path: child.menu_path,
+                icon: child.icon?.toLowerCase() || menu.icon?.toLowerCase() || 'dashboard',
+                order_number: child.order_number || 999 // Default high number if not specified
+              }))
+              // Sort children by order_number
+              .sort((a, b) => (a.order_number || 0) - (b.order_number || 0))
+          };
+        })
+        // Sort parent menus by order_number
+        .sort((a, b) => (a.order_number || 0) - (b.order_number || 0));
 
         setMenus(processedMenus);
       }
@@ -261,16 +266,29 @@ const Sidebar = ({ collapsed, onLogout }) => {
 
           return (
             <div key={`menu_${menu.id}`} className="relative group px-3" data-menu-id={menu.id}>
-              <button
-                onClick={(e) => handleMenuClick(menu.id, e)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors relative
-                  ${isActiveParent || isActive || activeMenu === menu.id 
-                    ? 'bg-blue-50 text-blue-600 before:absolute before:right-0 before:top-0 before:bottom-0 before:w-1 before:bg-blue-600 before:rounded-l' 
-                    : 'hover:bg-white'}`}
-              >
-                <Icon size={20} />
-                <span className="text-sm font-medium">{menu.menu_name}</span>
-              </button>
+              {hasChildren ? (
+                <button
+                  onClick={(e) => handleMenuClick(menu.id, e)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors relative
+                    ${isActiveParent || isActive || activeMenu === menu.id 
+                      ? 'bg-blue-50 text-blue-600 before:absolute before:right-0 before:top-0 before:bottom-0 before:w-1 before:bg-blue-600 before:rounded-l' 
+                      : 'hover:bg-white'}`}
+                >
+                  <Icon size={20} />
+                  <span className="text-sm font-medium">{menu.menu_name}</span>
+                </button>
+              ) : (
+                <Link
+                  to={menu.menu_path || '#'}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors relative
+                    ${isActive 
+                      ? 'bg-blue-50 text-blue-600 before:absolute before:right-0 before:top-0 before:bottom-0 before:w-1 before:bg-blue-600 before:rounded-l' 
+                      : 'hover:bg-white'}`}
+                >
+                  <Icon size={20} />
+                  <span className="text-sm font-medium">{menu.menu_name}</span>
+                </Link>
+              )}
 
               {activeMenu === menu.id && hasChildren && (
                 <div className="mt-1 pl-9">

@@ -430,7 +430,7 @@ const MedicalRecordModal = ({ type, title, show, onClose, onSave, selectedItems,
                       onClick={() => onRemoveItem(type, item)} 
                       className="text-gray-400 hover:text-gray-700 ml-1 p-0.5 rounded-full hover:bg-gray-100 flex-shrink-0 self-start"
                     >
-                      <X size={14} />
+                      <X size={14} className="text-gray-400 hover:text-gray-700" />
                     </button>
                   </div>
                 ))
@@ -807,14 +807,11 @@ const InputRM = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={loading || !isFormValid()}
-                className={`px-4 py-2 text-sm font-medium text-white rounded ${
-                  loading || !isFormValid()
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
+                disabled={!isFormValid()}
+                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${isFormValid() ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
               >
-                {loading ? 'Menyimpan...' : 'Simpan'}
+                <Save size={18} className={isFormValid() ? 'text-white' : 'text-gray-500'} />
+                Simpan
               </button>
             </div>
           </div>

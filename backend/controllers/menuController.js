@@ -86,10 +86,12 @@ const menuController = {
                   'id', c.id,
                   'menu_name', c.menu_name,
                   'menu_path', c.menu_path,
-                  'icon', c.icon
+                  'icon', c.icon,
+                  'order_number', c.order_number
                 )
               ELSE NULL
             END
+            ORDER BY c.order_number
           ), '[]') as children
         FROM menu_hierarchy m
         LEFT JOIN menu_hierarchy c ON c.parent_id = m.id

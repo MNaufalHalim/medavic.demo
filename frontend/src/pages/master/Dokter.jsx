@@ -608,7 +608,7 @@ const Dokter = () => {
                       onClick={addSchedule}
                       className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center"
                     >
-                      <Plus size={16} className="mr-1.5" />
+                      <Plus size={16} className="text-blue-600 mr-1.5" />
                       Tambah Jadwal
                     </button>
                   </div>
@@ -620,10 +620,10 @@ const Dokter = () => {
                       <p className="text-gray-500 text-sm mt-1 mb-3">Klik tombol "Tambah Jadwal" untuk menambahkan jadwal praktik dokter</p>
                       <button 
                         onClick={addSchedule}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center shadow-sm mt-2"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-sm hover:shadow"
                       >
-                        <Plus size={16} className="mr-1.5" />
-                        Tambah Jadwal Baru
+                        <Plus size={16} className="text-white" />
+                        <span className="text-white">Tambah Jadwal Baru</span>
                       </button>
                     </div>
                   ) : (
@@ -700,10 +700,10 @@ const Dokter = () => {
                                   </label>
                                   <button 
                                     onClick={() => removeSchedule(index)}
-                                    className="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg transition-all duration-200 flex items-center"
+                                    className="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg transition-all duration-200 flex items-center justify-center"
                                     title="Hapus jadwal"
                                   >
-                                    <Trash2 size={16} />
+                                    <Trash2 size={16} className="text-red-600" />
                                   </button>
                                 </div>
                               </td>

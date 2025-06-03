@@ -1932,7 +1932,7 @@ const RawatJalan = () => {
                     onClick={handleCloseModal}
                     className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
                   >
-                    <X size={16} />
+                    <X size={16} className="text-gray-600" />
                     Batal
                   </button>
                   <button
@@ -1942,7 +1942,7 @@ const RawatJalan = () => {
                     }}
                     className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2"
                   >
-                    <Save size={16} />
+                    <Save size={16} className="text-white" />
                     Simpan
                   </button>
                 </>
@@ -1954,14 +1954,14 @@ const RawatJalan = () => {
                         onClick={handleDeleteClick}
                         className="px-5 py-2.5 text-sm font-medium text-red-600 hover:text-red-700 border border-red-100 rounded-lg hover:bg-red-50 transition-all duration-200 flex items-center gap-2"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={16} className="text-red-600" />
                         Hapus
                       </button>
                       <button
                         onClick={handleEditClick}
                         className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2"
                       >
-                        <Edit size={16} />
+                        <Edit size={16} className="text-white" />
                         Edit
                       </button>
                     </>
@@ -1971,14 +1971,14 @@ const RawatJalan = () => {
                         onClick={handleEditCancel}
                         className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
                       >
-                        <X size={16} />
+                        <X size={16} className="text-gray-600" />
                         Batal
                       </button>
                       <button
                         onClick={handleEditSubmit}
                         className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2"
                       >
-                        <Save size={16} />
+                        <Save size={16} className="text-white" />
                         Simpan
                       </button>
                     </>
