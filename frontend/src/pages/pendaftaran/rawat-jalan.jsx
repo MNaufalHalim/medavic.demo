@@ -23,7 +23,10 @@ import {
   UserPlus,
   Stethoscope,
   Activity,
-  Save
+  Save,
+  CreditCard,
+  UserCircle,
+  Heart
 } from 'lucide-react';
 import PageTemplate from '../../components/PageTemplate';
 
@@ -701,6 +704,7 @@ const RawatJalan = () => {
     if (selected?.value === 'new') {
       setShowNewPatientForm(true);
       setSelectedPatient(null);
+      // Reset form fields for new patient
       setNewAppointment(prev => ({
         ...prev,
         no_rm: '',
@@ -716,6 +720,7 @@ const RawatJalan = () => {
     }
   
     if (selected) {
+      // Set selected patient and hide new patient form
       setSelectedPatient(selected.data);
       setShowNewPatientForm(false);
       setNewAppointment(prev => ({
@@ -731,10 +736,13 @@ const RawatJalan = () => {
       }));
     } else {
       setSelectedPatient(null);
+      // Don't reset all fields when clearing selection
       setNewAppointment(prev => ({
         ...prev,
         no_rm: ''
       }));
+      // Tidak otomatis menampilkan form pasien baru saat pembatalan
+      setShowNewPatientForm(false);
     }
   };
 
@@ -1233,43 +1241,46 @@ const RawatJalan = () => {
                     </h4>
                     <div className="flex flex-col md:flex-row gap-4 items-start">
                       <div className="flex-1 relative">
-                        <div className="relative">
-                          <Select
-                            isClearable
-                            isSearchable
-                            placeholder="Cari berdasarkan NIK atau nama (min. 3 huruf)..."
-                            options={patientOptions}
-                            onInputChange={(value, { action }) => {
-                              if (action === 'input-change') {
-                                searchPatients(value);
-                              }
-                            }}
-                            onChange={handlePatientSelect}
-                            className="basic-single"
-                            classNamePrefix="select"
-                            styles={{
-                              control: (baseStyles, state) => ({
-                                ...baseStyles,
-                                borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                borderRadius: '0.5rem',
-                                padding: '2px',
-                                '&:hover': {
-                                  borderColor: '#3b82f6'
+                        {!selectedPatient && (
+                          <div className="relative">
+                            <Select
+                              isClearable
+                              isSearchable
+                              placeholder="Cari berdasarkan NIK atau nama (min. 3 huruf)..."
+                              options={patientOptions}
+                              onInputChange={(value, { action }) => {
+                                if (action === 'input-change') {
+                                  searchPatients(value);
                                 }
-                              }),
-                              option: (styles, { isSelected, isFocused }) => ({
-                                ...styles,
-                                backgroundColor: isSelected ? '#3b82f6' : isFocused ? '#dbeafe' : null,
-                                color: isSelected ? 'white' : '#374151',
-                                ':active': {
-                                  backgroundColor: '#3b82f6',
-                                  color: 'white'
-                                }
-                              })
-                            }}
-                          />
-                        </div>
+                              }}
+                              onChange={handlePatientSelect}
+                              className="basic-single"
+                              classNamePrefix="select"
+                              filterOption={(option, inputValue) => true} // Disable internal filtering
+                              styles={{
+                                control: (baseStyles, state) => ({
+                                  ...baseStyles,
+                                  borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  borderRadius: '0.5rem',
+                                  padding: '2px',
+                                  '&:hover': {
+                                    borderColor: '#3b82f6'
+                                  }
+                                }),
+                                option: (styles, { isSelected, isFocused }) => ({
+                                  ...styles,
+                                  backgroundColor: isSelected ? '#3b82f6' : isFocused ? '#dbeafe' : null,
+                                  color: isSelected ? 'white' : '#374151',
+                                  ':active': {
+                                    backgroundColor: '#3b82f6',
+                                    color: 'white'
+                                  }
+                                })
+                              }}
+                            />
+                          </div>
+                        )}
                         {selectedPatient && (
                           <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-white rounded-lg border border-blue-100 shadow-sm flex items-center justify-between animate-fadeIn">
                             <div className="flex items-center">
@@ -1296,7 +1307,33 @@ const RawatJalan = () => {
                             <button 
                               onClick={() => {
                                 setSelectedPatient(null);
-                                setShowNewPatientForm(true);
+                                // Reset form fields completely when canceling patient selection
+                                setNewAppointment({
+                                  no_rm: '',
+                                  nik: '',
+                                  nama_lengkap: '',
+                                  tanggal_lahir: format(new Date(), 'yyyy-MM-dd'),
+                                  jenis_kelamin: 'L',
+                                  alamat: '',
+                                  no_telepon: '',
+                                  email: '',
+                                  doctorId: newAppointment.doctorId,
+                                  doctor: newAppointment.doctor,
+                                  date: newAppointment.date,
+                                  time: newAppointment.time,
+                                  type: newAppointment.type,
+                                  status: newAppointment.status,
+                                  notes: newAppointment.notes,
+                                  poli: newAppointment.poli,
+                                  height: '',
+                                  weight: '',
+                                  heart_rate: '',
+                                  blood_sugar: '',
+                                  temperature: '',
+                                  complaint: ''
+                                });
+                                // Tidak otomatis menampilkan form pasien baru saat pembatalan
+                                setShowNewPatientForm(false);
                               }}
                               className="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 transition-colors"
                               title="Hapus pilihan pasien"
@@ -1306,25 +1343,27 @@ const RawatJalan = () => {
                           </div>
                         )}
                       </div>
-                      <button
-                        onClick={() => {
-                          setSelectedPatient(null);
-                          setShowNewPatientForm(prev => !prev);
-                        }}
-                        className={`px-4 py-2.5 text-sm font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${showNewPatientForm ? 'text-blue-700 bg-blue-50 hover:bg-blue-100' : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'}`}
-                      >
-                        {showNewPatientForm ? (
-                          <>
-                            <X size={16} />
-                            Batal
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus size={16} />
-                            Pasien Baru
-                          </>
-                        )}
-                      </button>
+                      {!selectedPatient && (
+                        <button
+                          onClick={() => {
+                            setSelectedPatient(null);
+                            setShowNewPatientForm(prev => !prev);
+                          }}
+                          className={`px-4 py-2.5 text-sm font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${showNewPatientForm ? 'text-blue-700 bg-blue-50 hover:bg-blue-100' : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'}`}
+                        >
+                          {showNewPatientForm ? (
+                            <>
+                              <X size={16} className="text-blue-700" />
+                              Batal
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus size={16} className="text-white" />
+                              Pasien Baru
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1464,7 +1503,7 @@ const RawatJalan = () => {
                               className={`flex-1 border ${newAppointment.jenis_kelamin === 'L' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} rounded-lg p-3 flex items-center cursor-pointer transition-all duration-200 hover:border-blue-300`}
                             >
                               <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${newAppointment.jenis_kelamin === 'L' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                <Male size={16} />
+                                <UserCircle size={16} className="text-white" />
                               </div>
                               <span className={`${newAppointment.jenis_kelamin === 'L' ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>Laki-laki</span>
                             </div>
@@ -1473,7 +1512,7 @@ const RawatJalan = () => {
                               className={`flex-1 border ${newAppointment.jenis_kelamin === 'P' ? 'border-pink-500 bg-pink-50' : 'border-gray-300'} rounded-lg p-3 flex items-center cursor-pointer transition-all duration-200 hover:border-pink-300`}
                             >
                               <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${newAppointment.jenis_kelamin === 'P' ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                <Female size={16} />
+                                <Heart size={16} className="text-white" />
                               </div>
                               <span className={`${newAppointment.jenis_kelamin === 'P' ? 'text-pink-700 font-medium' : 'text-gray-700'}`}>Perempuan</span>
                             </div>

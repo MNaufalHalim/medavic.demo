@@ -26,7 +26,8 @@ import {
   RefreshCw, 
   Filter, 
   User, 
-  Pill
+  Pill,
+  CreditCard
 } from 'lucide-react';
 
 // CSS for animations and styling

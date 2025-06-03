@@ -63,12 +63,23 @@ const appointmentController = {
   searchPatients: async (req, res) => {
     try {
       const { keyword } = req.query;
+      
+      // Validasi keyword minimal 3 karakter
+      if (!keyword || keyword.length < 3) {
+        return res.json({
+          status: 'success',
+          data: []
+        });
+      }
+      
       const [patients] = await pool.query(`
-        SELECT id, no_rm, nik, nama_lengkap, tanggal_lahir, jenis_kelamin, alamat
+        SELECT id, no_rm, nik, nama_lengkap, tanggal_lahir, jenis_kelamin, alamat, no_telepon, email
         FROM pasien
         WHERE nama_lengkap LIKE ? OR nik LIKE ?
         LIMIT 10
       `, [`%${keyword}%`, `%${keyword}%`]);
+      
+      console.log(`Search patients with keyword: ${keyword}, found: ${patients.length} results`);
       
       res.json({
         status: 'success',

@@ -81,18 +81,71 @@ const login = async (req, res) => {
     console.log('Fetching user menus:', new Date().toISOString());
     let menus = [];
     try {
-      const [menuResults] = await pool.query(
-        `SELECT DISTINCT m.id, m.menu_name, m.menu_path, m.parent_id, m.icon, m.order_number
-         FROM sys_menu m
-         INNER JOIN sys_role_menu_privilege rmp ON m.id = rmp.menu_id
-         WHERE rmp.role_id = ? AND rmp.can_view = true
-         ORDER BY m.order_number ASC`,
-        [user.role_id]
+      // Periksa apakah tabel sys_role_menu_privilege ada
+      const [tableCheck] = await pool.query(
+        `SELECT COUNT(*) as count FROM information_schema.tables 
+         WHERE table_schema = DATABASE() AND table_name = 'sys_role_menu_privilege'`
       );
-      menus = menuResults || [];
-      console.log('Menu query completed:', new Date().toISOString());
+      
+      const tableExists = tableCheck[0].count > 0;
+      console.log(`Table sys_role_menu_privilege exists: ${tableExists}`);
+      
+      if (tableExists) {
+        // Gunakan query yang lebih sederhana dan robust
+        const [menuResults] = await pool.query(
+          `SELECT DISTINCT m.id, m.menu_name, m.menu_path, m.parent_id, m.icon, m.order_number
+           FROM sys_menu m
+           INNER JOIN sys_role_menu_privilege rmp ON m.id = rmp.menu_id
+           WHERE rmp.role_id = ? AND rmp.can_view = 1
+           ORDER BY COALESCE(m.parent_id, m.id), m.order_number`,
+          [user.role_id]
+        );
+        
+        // Proses menu untuk membuat struktur hierarki
+        const menuMap = {};
+        const rootMenus = [];
+        
+        // Pertama, buat map dari semua menu
+        menuResults.forEach(menu => {
+          menuMap[menu.id] = {
+            ...menu,
+            children: []
+          };
+        });
+        
+        // Kemudian, susun hierarki
+        menuResults.forEach(menu => {
+          if (menu.parent_id === null) {
+            rootMenus.push(menuMap[menu.id]);
+          } else if (menuMap[menu.parent_id]) {
+            menuMap[menu.parent_id].children.push(menuMap[menu.id]);
+          }
+        });
+        
+        menus = rootMenus;
+      } else {
+        // Fallback ke query lama jika tabel tidak ada
+        const [menuResults] = await pool.query(
+          `SELECT DISTINCT m.id, m.menu_name, m.menu_path, m.parent_id, m.icon, m.order_number
+           FROM sys_menu m
+           LEFT JOIN sys_role_privilege rp ON m.id = rp.menu_id
+           WHERE rp.role_id = ? AND rp.can_view = 1
+           ORDER BY m.order_number ASC`,
+          [user.role_id]
+        );
+        menus = menuResults || [];
+      }
+      
+      console.log(`Menu query completed, found ${menus.length} root menus:`, new Date().toISOString());
     } catch (err) {
       console.error('Menu query error:', err);
+      // Log detail error untuk debugging
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        sqlState: err.sqlState,
+        sqlMessage: err.sqlMessage
+      });
       // Don't throw here, continue with empty menus
       console.warn('Continuing login process with empty menus');
     }

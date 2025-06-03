@@ -47,68 +47,130 @@ const menuController = {
       }
 
       const roleId = userRows[0].role_id;
-
-      const [menuRows] = await pool.query(`
-        WITH RECURSIVE menu_hierarchy AS (
-          -- Ambil parent menu yang memiliki child dengan akses
-          SELECT DISTINCT m.id, m.menu_name, m.menu_path, m.icon, m.parent_id, m.order_number
-          FROM sys_menu m
-          WHERE m.parent_id IS NULL 
-          AND EXISTS (
-            SELECT 1
-            FROM sys_menu sm
-            JOIN sys_role_menu_privilege rmp ON rmp.menu_id = sm.id
-            WHERE sm.parent_id = m.id
-            AND rmp.role_id = ?
+      console.log(`Fetching menus for user ID ${userId} with role ID ${roleId}`);
+      
+      // Cek apakah tabel sys_role_menu_privilege ada
+      const [tableCheck] = await pool.query(
+        `SELECT COUNT(*) as count FROM information_schema.tables 
+         WHERE table_schema = DATABASE() AND table_name = 'sys_role_menu_privilege'`
+      );
+      
+      const tableExists = tableCheck[0].count > 0;
+      console.log(`Table sys_role_menu_privilege exists: ${tableExists}`);
+      
+      let menuData = [];
+      
+      if (tableExists) {
+        try {
+          // Coba pendekatan sederhana tanpa recursive CTE
+          console.log('Trying simple approach without recursive CTE');
+          
+          // 1. Ambil parent menu
+          const [parentMenus] = await pool.query(`
+            SELECT m.id, m.menu_name, m.menu_path, m.icon, m.parent_id, m.order_number
+            FROM sys_menu m
+            JOIN sys_role_menu_privilege rmp ON m.id = rmp.menu_id
+            WHERE rmp.role_id = ? 
             AND rmp.can_view = 1
-          )
+            AND m.parent_id IS NULL
+            ORDER BY m.order_number
+          `, [roleId]);
           
-          UNION ALL
+          console.log(`Found ${parentMenus.length} parent menus`);
           
-          -- Ambil child menu yang memiliki akses
-          SELECT sm.id, sm.menu_name, sm.menu_path, sm.icon, sm.parent_id, sm.order_number
-          FROM sys_menu sm
-          JOIN sys_role_menu_privilege rmp ON rmp.menu_id = sm.id
-          WHERE rmp.role_id = ?
-          AND rmp.can_view = 1
-        )
-        SELECT 
-          m.id,
-          m.menu_name,
-          m.menu_path,
-          m.icon,
-          m.parent_id,
-          m.order_number,
-          COALESCE(JSON_ARRAYAGG(
-            CASE 
-              WHEN c.id IS NOT NULL THEN
-                JSON_OBJECT(
-                  'id', c.id,
-                  'menu_name', c.menu_name,
-                  'menu_path', c.menu_path,
-                  'icon', c.icon,
-                  'order_number', c.order_number
-                )
-              ELSE NULL
-            END
-            ORDER BY c.order_number
-          ), '[]') as children
-        FROM menu_hierarchy m
-        LEFT JOIN menu_hierarchy c ON c.parent_id = m.id
-        WHERE m.parent_id IS NULL
-        GROUP BY m.id, m.menu_name, m.menu_path, m.icon, m.parent_id, m.order_number
-        ORDER BY m.order_number;
-      `, [roleId, roleId]);
-
-      // Process the menu rows
-      const processedMenus = menuRows.map(menu => ({
-        ...menu,
-        children: JSON.parse(menu.children)
-      }));
-
+          // 2. Untuk setiap parent, ambil child-nya
+          for (const menu of parentMenus) {
+            const [children] = await pool.query(`
+              SELECT m.id, m.menu_name, m.menu_path, m.icon, m.order_number
+              FROM sys_menu m
+              JOIN sys_role_menu_privilege rmp ON m.id = rmp.menu_id
+              WHERE rmp.role_id = ?
+              AND rmp.can_view = 1
+              AND m.parent_id = ?
+              ORDER BY m.order_number
+            `, [roleId, menu.id]);
+            
+            menu.children = children || [];
+          }
+          
+          menuData = parentMenus;
+        } catch (error) {
+          console.error('Error in simple menu query:', error);
+          
+          // Fallback ke query yang lebih sederhana lagi
+          console.log('Falling back to even simpler query');
+          const [allMenus] = await pool.query(`
+            SELECT m.id, m.menu_name, m.menu_path, m.icon, m.parent_id, m.order_number
+            FROM sys_menu m
+            JOIN sys_role_menu_privilege rmp ON m.id = rmp.menu_id
+            WHERE rmp.role_id = ? 
+            AND rmp.can_view = 1
+            ORDER BY m.order_number
+          `, [roleId]);
+          
+          // Buat struktur hierarki secara manual
+          const menuMap = {};
+          const rootMenus = [];
+          
+          // Pertama, buat map dari semua menu
+          allMenus.forEach(menu => {
+            menuMap[menu.id] = {
+              ...menu,
+              children: []
+            };
+          });
+          
+          // Kemudian, susun hierarki
+          allMenus.forEach(menu => {
+            if (menu.parent_id === null) {
+              rootMenus.push(menuMap[menu.id]);
+            } else if (menuMap[menu.parent_id]) {
+              menuMap[menu.parent_id].children.push(menuMap[menu.id]);
+            }
+          });
+          
+          menuData = rootMenus;
+        }
+      } else {
+        // Gunakan sys_role_privilege jika sys_role_menu_privilege tidak ada
+        console.log('Using sys_role_privilege table as fallback');
+        const [menuRows] = await pool.query(`
+          SELECT m.id, m.menu_name, m.menu_path, m.icon, m.parent_id, m.order_number
+          FROM sys_menu m
+          LEFT JOIN sys_role_privilege rp ON m.id = rp.menu_id
+          WHERE rp.role_id = ? AND rp.can_view = 1
+          ORDER BY m.order_number
+        `, [roleId]);
+        
+        // Buat struktur hierarki secara manual
+        const menuMap = {};
+        const rootMenus = [];
+        
+        // Pertama, buat map dari semua menu
+        menuRows.forEach(menu => {
+          menuMap[menu.id] = {
+            ...menu,
+            children: []
+          };
+        });
+        
+        // Kemudian, susun hierarki
+        menuRows.forEach(menu => {
+          if (menu.parent_id === null) {
+            rootMenus.push(menuMap[menu.id]);
+          } else if (menuMap[menu.parent_id]) {
+            menuMap[menu.parent_id].children.push(menuMap[menu.id]);
+          }
+        });
+        
+        menuData = rootMenus;
+      }
+      
+      console.log(`Successfully fetched ${menuData.length} menu items`);
+      
       res.json({
         status: 'success',
-        data: processedMenus
+        data: menuData
       });
     } catch (error) {
       console.error('Error fetching user menus:', error);
