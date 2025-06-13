@@ -239,13 +239,18 @@ const Sidebar = ({ collapsed, onLogout }) => {
     setActiveMenu(menuId); // Langsung set ke menuId baru, tidak perlu toggle
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  };
+
   return (
     <div ref={sidebarRef} className="fixed left-0 h-screen w-64 bg-gray-50 border-r border-gray-200 text-gray-700 flex flex-col z-[9]">
       {/* Logo */}
       <div className="flex items-center gap-2 p-4 bg-white border-b border-gray-200">
         {/* <svg width="32" height="30" viewBox="0 0 282 145" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fillRule="evenodd" clipRule="evenodd" d="M110.202 0L131.834 37.4662H131.908L132.669 38.7837L153.642 75.1088L153.648 75.0979L173.567 109.578L153.642 144.09L132.011 106.624L131.935 106.624L110.202 68.9812L88.4695 106.624H48.6432L48.6517 106.609L0 106.609L14.0118 73.2168L67.875 73.3132L110.202 0ZM199.128 65.3051L183.046 37.4662L215.201 37.4663L199.128 65.3051Z" fill="#14967F"/>
-          <path fillRule="evenodd" clipRule="evenodd" d="M218.713 73.2172L210.316 58.6739L224.507 34.5138L204.188 1.20767L190.634 24.5826L176.441 0L153.402 39.9052L191.922 106.624L238 106.624L237.962 106.557L267.251 106.609L281.262 73.2172L218.713 73.2172Z" fill="#095D7E"/>
+          <path fillRule="evenodd" clipRule="evenodd" d="M110.202 0L131.834 37.4662H131.908L132.669 38.7837L153.642 75.1088L153.648 75.0979L173.567 109.578L153.642 144.09L132.011 106.624L131.935 106.624L110.202 68.9812L88.4695 106.624H48.6432L48.6517 106.609L0 106.609L14.0118 73.2168L67.875 73.3132L110.202 0ZM199.128 65.3051L183.046 37.4662L215.201 37.4663L199.128 65.3051ZM218.713 73.2172L210.316 58.6739L224.507 34.5138L204.188 1.20767L190.634 24.5826L176.441 0L153.402 39.9052L191.922 106.624L238 106.624L237.962 106.557L267.251 106.609L281.262 73.2172L218.713 73.2172Z" fill="#14967F"/>
+          <path fillRule="evenodd" clipRule="evenodd" d="M425.79 0L433.403 13.1874H433.43L433.746 13.7352L441.079 26.437L441.082 26.4332L448.093 38.5697L441.079 50.7174L433.466 37.5299H433.439L425.79 24.2803L418.14 37.5299L404.122 37.5299L404.125 37.5247L387 37.5247L391.932 25.7711L410.891 25.8051L425.79 0ZM457.09 22.9863L451.429 13.1874L462.747 13.1874L457.09 22.9863Z" fill="#095D7E"/>
         </svg> 
         <span className="font-semibold text-lg">MEDAVIC</span>*/}
         <svg width="150" height="32" viewBox="0 0 486 123" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -331,13 +336,15 @@ const Sidebar = ({ collapsed, onLogout }) => {
             </span>
           </button>
         </div>
-        <button
-          onClick={onLogout}
-          className="w-full mt-2 flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50"
-        >
-          <LogOut size={20} />
-          <span className="text-sm font-medium">Logout</span>
-        </button>
+        <ul className="mt-auto">
+          <li 
+            onClick={handleLogout}
+            className="flex items-center p-3 text-red-500 hover:bg-red-50 cursor-pointer"
+          >
+            <LogOut className="mr-3" size={20} />
+            <span>Logout</span>
+          </li>
+        </ul>
       </div>
     </div>
   );

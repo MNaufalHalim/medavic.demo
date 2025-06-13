@@ -1,732 +1,1175 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import PageTemplate from '../../components/PageTemplate';
 import axios from 'axios';
 import config from '../../config';
 import { 
-  User, Calendar, Phone, Mail, Award, Clock, 
-  CheckCircle, XCircle, Plus, Trash2, Save, 
-  Edit, RefreshCw, Search, Filter, ChevronDown, 
-  Stethoscope, AlertTriangle, Info, Shield
+  AlertTriangle, Award, Calendar, CalendarClock, CalendarDays, CalendarPlus, CalendarOff, CalendarX2, CheckCircle, ChevronDown, Clock, Clock3, Clock9, Edit3, FileText, Filter, Info, Loader2, Mail, Phone, Plus, PlusCircle, Save, Search, Shield, Stethoscope, Trash2, User, Users, XCircle, MapPin, ShieldCheck, ShieldAlert, Sun, Activity, Wallet 
 } from 'lucide-react';
 
-// Tambahkan style untuk animasi
-const styles = `
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+// Reusable DoctorInfoForm Component
+const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Nama Lengkap */}
+        <div className="relative group">
+          {isEditing ? (
+            <>
+              <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-sky-600 transition-colors duration-200">
+                Nama Lengkap <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                </div>
+                <input
+                  type="text"
+                  value={doctor.name ?? ''}
+                  onChange={(e) => onChange('name', e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300"
+                  placeholder="Masukkan nama lengkap dokter"
+                  required
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
+              <div className="p-2 bg-sky-50 rounded-lg">
+                <User size={18} className="text-sky-500" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-gray-500 mb-1">Nama Lengkap</p>
+                {doctor.name ? (
+                  <p className="text-sm text-gray-800 break-words">{doctor.name}</p>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Belum ada nama</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Spesialisasi */}
+        <div className="relative group">
+          {isEditing ? (
+            <>
+              <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-sky-600 transition-colors duration-200">
+                Spesialisasi <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Stethoscope size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                </div>
+                <input
+                  type="text"
+                  value={doctor.specialization ?? ''}
+                  onChange={(e) => onChange('specialization', e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300"
+                  placeholder="Masukkan spesialisasi dokter"
+                  required
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
+              <div className="p-2 bg-sky-50 rounded-lg">
+                <Stethoscope size={18} className="text-sky-500" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-gray-500 mb-1">Spesialisasi</p>
+                {doctor.specialization ? (
+                  <p className="text-sm text-gray-800 break-words">{doctor.specialization}</p>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Belum ada spesialisasi</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Email */}
+        <div className="relative group">
+          {isEditing ? (
+            <>
+              <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-sky-600 transition-colors duration-200">
+                Email
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                </div>
+                <input
+                  type="email"
+                  value={doctor.email ?? ''}
+                  onChange={(e) => onChange('email', e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300"
+                  placeholder="Masukkan email dokter"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
+              <div className="p-2 bg-sky-50 rounded-lg">
+                <Mail size={18} className="text-sky-500" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-gray-500 mb-1">Email</p>
+                {doctor.email ? (
+                  <p className="text-sm text-gray-800 break-words">{doctor.email}</p>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Belum ada email</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Nomor Telepon */}
+        <div className="relative group">
+          {isEditing ? (
+            <>
+              <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-sky-600 transition-colors duration-200">
+                Nomor Telepon
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                </div>
+                <input
+                  type="tel"
+                  value={doctor.phone_number ?? ''}
+                  onChange={(e) => onChange('phone_number', e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300"
+                  placeholder="Masukkan nomor telepon dokter"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
+              <div className="p-2 bg-sky-50 rounded-lg">
+                <Phone size={18} className="text-sky-500" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-gray-500 mb-1">Nomor Telepon</p>
+                {doctor.phone_number ? (
+                  <p className="text-sm text-gray-800 break-words">{doctor.phone_number}</p>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Belum ada telepon</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Status */}
+        <div className="relative group">
+          {isEditing ? (
+            <>
+              <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-sky-600 transition-colors duration-200">
+                Status <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Activity size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                </div>
+                <select
+                  value={doctor.status === 'Active' ? 'Active' : 'Inactive'}
+                  onChange={(e) => onChange('status', e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300 appearance-none cursor-pointer"
+                  required
+                >
+                  <option value="Active">Aktif</option>
+                  <option value="Inactive">Tidak Aktif</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <ChevronDown size={18} className="text-gray-400 transition-transform duration-300 group-hover:scale-110" />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
+              <div className="p-2 bg-sky-50 rounded-lg">
+                {doctor.status === 'Active' ? 
+                  <ShieldCheck size={18} className="text-green-500" /> : 
+                  <ShieldAlert size={18} className="text-red-500" />
+                }
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-gray-500 mb-1">Status</p>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  doctor.status === 'Active'
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  {doctor.status === 'Active' ? 'Aktif' : 'Tidak Aktif'}
+                  </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Reusable DoctorSchedule Component
+const DoctorSchedule = ({ scheduleList, isEditing, onScheduleListChange }) => {
+  const dayNameIndonesian = {
+    sunday: 'Minggu', monday: 'Senin', tuesday: 'Selasa', wednesday: 'Rabu',
+    thursday: 'Kamis', friday: 'Jumat', saturday: 'Sabtu'
+  };
+
+  const dayColors = {
+    sunday: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', icon: 'text-red-500' },
+    monday: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', icon: 'text-blue-500' },
+    tuesday: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', icon: 'text-green-500' },
+    wednesday: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', icon: 'text-yellow-500' },
+    thursday: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', icon: 'text-purple-500' },
+    friday: { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200', icon: 'text-pink-500' },
+    saturday: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', icon: 'text-indigo-500' }
+  };
+
+  const dayIcons = {
+    sunday: Sun,
+    monday: Calendar,
+    tuesday: Calendar,
+    wednesday: Calendar,
+    thursday: Calendar,
+    friday: Calendar,
+    saturday: Calendar
+  };
+
+  const handleAddSlot = () => {
+    const newSlot = { temp_id: uuidv4(), day_of_week: 'monday', start_time: '', end_time: '' };
+    onScheduleListChange([...scheduleList, newSlot]);
+  };
+
+  const handleRemoveSlot = (temp_id) => {
+    onScheduleListChange(scheduleList.filter(s => s.temp_id !== temp_id));
+  };
+
+  const handleSlotChange = (temp_id, field, value) => {
+    onScheduleListChange(scheduleList.map(s => s.temp_id === temp_id ? { ...s, [field]: value } : s));
+  };
+
+  const hours = Array.from({ length: 12 }, (_, i) => i + 7).map(hour => ({
+    value: hour.toString().padStart(2, '0'),
+    label: `${hour.toString().padStart(2, '0')}:00`
+  }));
+
+  const handleTimeChange = (temp_id, field, value) => {
+    if (!value) {
+      handleSlotChange(temp_id, field, '');
+      return;
+    }
+    handleSlotChange(temp_id, field, `${value}:00`);
+  };
+
+  if (!isEditing && scheduleList.length === 0) {
+    return (
+      <section className="mt-6">
+        <h4 className="text-xl font-semibold text-gray-700 flex items-center gap-2 pb-3 border-b border-gray-200 mb-6">
+          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <CalendarClock size={20} className="text-indigo-600" />
+          </div>
+          Jadwal Praktik Dokter
+        </h4>
+        <div className="text-center p-12 bg-gradient-to-b from-gray-50 to-white rounded-2xl border-2 border-dashed border-gray-200">
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <div className="absolute inset-0 bg-sky-100 rounded-full animate-pulse"></div>
+            <CalendarOff size={48} className="text-sky-400 relative z-10 mx-auto" />
+          </div>
+          <h5 className="text-xl font-semibold text-gray-600 mb-3">Jadwal Belum Tersedia</h5>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            Belum ada jadwal praktik yang diatur. Silakan edit untuk menambahkan jadwal praktik dokter.
+          </p>
+          <button
+            onClick={() => setStateField('isEditing', true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium rounded-lg border border-sky-200 transition-all duration-300 hover:scale-105"
+          >
+            <PlusCircle size={18} />
+            Tambah Jadwal
+          </button>
+        </div>
+      </section>
+    );
   }
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-in-out;
-  }
-`;
+
+  return (
+    <section className="mt-6 space-y-6">
+      <h4 className="text-xl font-semibold text-gray-700 flex items-center gap-2 pb-3 border-b border-gray-200 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+          {isEditing ? (
+            <CalendarPlus size={20} className="text-indigo-600" />
+          ) : (
+            <CalendarClock size={20} className="text-indigo-600" />
+          )}
+        </div>
+        {isEditing ? 'Atur Jadwal Praktik' : 'Jadwal Praktik Dokter'}
+      </h4>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {scheduleList.map((slot) => {
+          const DayIcon = dayIcons[slot.day_of_week];
+          const colors = dayColors[slot.day_of_week];
+          
+          return (
+            <div 
+              key={slot.temp_id} 
+              className={`group relative overflow-hidden rounded-xl border transition-all duration-300 animate-fade-in-sm hover:shadow-md ${
+                isEditing 
+                  ? 'bg-white hover:border-sky-300 hover:bg-sky-50' 
+                  : `${colors.bg} ${colors.border}`
+              }`}
+            >
+            {isEditing ? (
+                <div className="p-4">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Calendar size={18} className="text-gray-400 transition-transform duration-300 group-hover:scale-110" />
+                        </div>
+                <select 
+                  value={slot.day_of_week} 
+                  onChange={(e) => handleSlotChange(slot.temp_id, 'day_of_week', e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300 appearance-none cursor-pointer"
+                >
+                          {DAY_ORDER.map(day => (
+                            <option key={day} value={day} className="py-2">
+                              {dayNameIndonesian[day]}
+                            </option>
+                          ))}
+                </select>
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          <ChevronDown size={18} className="text-gray-400 transition-transform duration-300 group-hover:scale-110" />
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleRemoveSlot(slot.temp_id)} 
+                      className="p-2.5 text-gray-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-all duration-300 border border-gray-200 hover:border-red-200"
+                    >
+                      <Trash2 size={18} className="transition-transform duration-300 hover:scale-110" />
+                </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Clock3 size={18} className="text-gray-400" />
+                      </div>
+                      <div className="relative group">
+                        <select
+                          value={slot.start_time ? slot.start_time.split(':')[0] : ''}
+                          onChange={(e) => handleTimeChange(slot.temp_id, 'start_time', e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300 appearance-none cursor-pointer"
+                        >
+                          <option value="">Pilih Jam Mulai</option>
+                          {hours.map(hour => (
+                            <option key={hour.value} value={hour.value}>
+                              {hour.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          <ChevronDown size={18} className="text-gray-400 transition-transform duration-300 group-hover:scale-110" />
+                        </div>
+                        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none">
+                          <div className="bg-gray-800 text-white text-xs rounded-lg py-1.5 px-3 whitespace-nowrap shadow-lg">
+                            Pilih jam mulai praktik
+                          </div>
+                          <div className="w-2 h-2 bg-gray-800 transform rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Clock9 size={18} className="text-gray-400" />
+                      </div>
+                      <div className="relative group">
+                        <select
+                          value={slot.end_time ? slot.end_time.split(':')[0] : ''}
+                          onChange={(e) => handleTimeChange(slot.temp_id, 'end_time', e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300 appearance-none cursor-pointer"
+                        >
+                          <option value="">Pilih Jam Selesai</option>
+                          {hours.map(hour => (
+                            <option key={hour.value} value={hour.value}>
+                              {hour.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          <ChevronDown size={18} className="text-gray-400 transition-transform duration-300 group-hover:scale-110" />
+                        </div>
+                        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none">
+                          <div className="bg-gray-800 text-white text-xs rounded-lg py-1.5 px-3 whitespace-nowrap shadow-lg">
+                            Pilih jam selesai praktik
+                          </div>
+                          <div className="w-2 h-2 bg-gray-800 transform rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {slot.start_time && slot.end_time && (
+                    <div className="mt-3 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm flex items-center gap-2 animate-fade-in">
+                      <Clock size={16} className="text-sky-500 transition-transform duration-300 group-hover:scale-110" />
+                      <span>Durasi: {calculateDuration(slot.start_time, slot.end_time)}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center`}>
+                      <DayIcon size={20} className={colors.icon} />
+                    </div>
+                    <div>
+                      <h5 className={`font-semibold ${colors.text}`}>
+                        {dayNameIndonesian[slot.day_of_week]}
+                      </h5>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock size={16} className="text-gray-400" />
+                        <span>
+                          {slot.start_time.substring(0,5)} - {slot.end_time.substring(0,5)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                      Aktif
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Durasi: {calculateDuration(slot.start_time, slot.end_time)}
+                    </div>
+                  </div>
+                </div>
+            )}
+          </div>
+          );
+        })}
+      </div>
+
+      {isEditing && (
+        <button 
+          onClick={handleAddSlot}
+          className="mt-6 w-full flex items-center justify-center gap-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold py-3 px-4 rounded-xl border-2 border-dashed border-sky-300 transition-all duration-300 hover:scale-[1.02] hover:shadow-md group"
+        >
+          <PlusCircle size={20} className="transition-transform duration-300 group-hover:rotate-90" />
+          <span className="transition-all duration-300">Tambah Jadwal</span>
+        </button>
+      )}
+
+      {!isEditing && scheduleList.length > 0 && (
+        <div className="mt-6 p-4 bg-gradient-to-r from-sky-50 to-indigo-50 rounded-xl border border-sky-200">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+              <Info size={18} className="text-sky-600" />
+            </div>
+            <div>
+              <h5 className="font-medium text-gray-800 mb-1">Informasi Jadwal</h5>
+              <p className="text-sm text-gray-600">
+                Jadwal praktik di atas menunjukkan waktu ketersediaan dokter untuk melayani pasien. 
+                Setiap jadwal memiliki durasi praktik yang telah ditentukan.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
+
+// Helper function to calculate duration
+const calculateDuration = (start, end) => {
+  if (!start || !end) return '';
+  const startHour = parseInt(start.split(':')[0]);
+  const endHour = parseInt(end.split(':')[0]);
+  const diffHrs = endHour - startHour;
+  return `${diffHrs} jam`;
+};
 
 const Dokter = () => {
-  const [doctors, setDoctors] = useState([]);
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [editDoctor, setEditDoctor] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [scheduleEntries, setScheduleEntries] = useState([]);
-  const [removedScheduleIds, setRemovedScheduleIds] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [state, setState] = useState({
+    doctorSearchTerm: '',
+    doctors: [],
+    selectedDoctor: null,
+    editDoctor: null,
+    loadingFetch: false,
+    loadingSave: false,
+    loadingDelete: false,
+    error: '',
+    success: '',
+    scheduleList: [],
+    removedScheduleIds: [],
+    filter: 'all',
+    isEditing: false,
+  });
 
-  useEffect(() => { fetchDoctors(); }, []);
+  const {
+    doctorSearchTerm,
+    doctors,
+    selectedDoctor,
+    editDoctor,
+    loadingFetch,
+    loadingSave,
+    loadingDelete,
+    error,
+    success,
+    scheduleList,
+    removedScheduleIds,
+    filter,
+    isEditing,
+  } = state;
 
-  const fetchDoctors = async () => {
-    setLoading(true);
-    setError('');
+  const setStateField = (field, value) => {
+    setState((prev) => ({ ...prev, [field]: value }));
+  };
+
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  const fetchDoctors = useCallback(async () => {
+    setStateField('loadingFetch', true);
+    setStateField('error', '');
     try {
       const response = await axios.get(`${config.apiUrl}/master/doctors`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       if (response.data.status === 'success') {
-        setDoctors(response.data.data);
-      } else setError(response.data.message || 'Gagal memuat data dokter');
+        setStateField('doctors', response.data.data);
+      } else {
+        setStateField('error', response.data.message || 'Gagal memuat data dokter');
+      }
     } catch {
-      setError('Gagal memuat data dokter');
+      setStateField('error', 'Gagal memuat data dokter');
     } finally {
-      setLoading(false);
+      setStateField('loadingFetch', false);
     }
-  };
+  }, []);
 
-  const handleSelectDoctor = (doc) => {
-    setSelectedDoctor(doc);
-    setEditDoctor({ ...doc });
-    setRemovedScheduleIds([]);
-    fetchSchedules(doc.id);
-    setError(''); setSuccess('');
-  };
-
-  const fetchSchedules = async (doctorId) => {
+  const fetchSchedules = useCallback(async (doctorId) => {
     try {
-      const res = await axios.get(`${config.apiUrl}/master/doctor-schedules?doctor_id=${doctorId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      const response = await axios.get(`${config.apiUrl}/master/doctor-schedules?doctor_id=${doctorId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      const data = res.data.data || {};
-      // Convert grouped object into flat array
-      const flat = Object.keys(data).flatMap(day =>
-        data[day].map(s => ({ ...s, day_of_week: day }))
+      const schedulesByDay = response.data.data;
+      const flatScheduleList = Object.entries(schedulesByDay).flatMap(([day, slots]) => 
+        slots.map(slot => ({...slot, day_of_week: day, temp_id: slot.id || uuidv4()}))
       );
-      setScheduleEntries(flat);
+      setStateField('scheduleList', flatScheduleList);
     } catch {
-      setScheduleEntries([]);
+      setStateField('scheduleList', []);
     }
-  };
+  }, []);
 
-  // Helper to deduplicate schedule entries by day + start + end
-  const dedupeSchedules = (list) => {
-    const seen = new Set();
-    const result = [];
-    for (const item of list) {
-      const key = `${item.day_of_week}|${item.start_time}|${item.end_time}`;
-      if (!item.day_of_week || !item.start_time || !item.end_time) {
-        result.push(item); // keep incomplete rows for user to finish
-        continue;
+  const handleSelectDoctor = useCallback((doc) => {
+    setState((prev) => ({
+      ...prev,
+      selectedDoctor: doc,
+      editDoctor: { ...doc },
+      removedScheduleIds: [],
+      error: '',
+      success: '',
+      isEditing: false,
+    }));
+    fetchSchedules(doc.id);
+  }, [fetchSchedules]);
+
+  const handleInputChange = useCallback((field, value) => {
+    setState((prev) => ({
+      ...prev,
+      editDoctor: { ...prev.editDoctor, [field]: value },
+    }));
+  }, []);
+
+  const handleScheduleListChange = useCallback((newScheduleList) => {
+    setState(prev => ({
+      ...prev,
+      scheduleList: newScheduleList,
+      editDoctor: {
+        ...prev.editDoctor,
+        schedule: newScheduleList
       }
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push(item);
-      }
+    }));
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!editDoctor?.name || !editDoctor?.specialization) {
+      setStateField('error', 'Nama dan spesialisasi dokter wajib diisi.');
+      return;
     }
-    return result;
-  };
+    setState((prev) => ({ ...prev, loadingSave: true, error: '', success: '' }));
 
-  const handleScheduleChange = (index, field, value) => {
-    setScheduleEntries(prev => {
-      const updated = prev.map((e,i) => i===index ? { ...e, [field]: value } : e);
-      return dedupeSchedules(updated);
-    });
-  };
+    const finalSchedules = scheduleList
+      .map(({ day_of_week, start_time, end_time }) => ({
+        day_of_week,
+        start_time,
+        end_time,
+        is_active: true,
+      }))
+      .filter(slot => slot.start_time && slot.end_time);
 
-  const addSchedule = () => {
-    setScheduleEntries(prev => dedupeSchedules([...prev, { day_of_week: '', start_time: '', end_time: '', is_active: true }]));
-  };
+    const finalPayload = {
+      ...editDoctor,
+      schedule: finalSchedules,
+    };
+    
+    delete finalPayload.scheduleList;
 
-  const removeSchedule = (index) => {
-    setScheduleEntries(prev => {
-      const rem = prev[index];
-      if (rem.id) setRemovedScheduleIds(ids => [...ids, rem.id]);
-      return prev.filter((_,i) => i!==index);
-    });
-  };
-
-  const handleInputChange = (field, value) => {
-    setEditDoctor(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = async () => {
-    if (!editDoctor) return;
-    setLoading(true); setError(''); setSuccess('');
     try {
-      const response = await axios.put(
-        `${config.apiUrl}/master/doctors/${editDoctor.id}`,
-        editDoctor,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-      );
-      if (response.data.status === 'success') {
-        setSuccess('Data dokter berhasil diperbarui');
-        fetchDoctors();
-        // save schedule changes
-        await Promise.all([
-          ...removedScheduleIds.map(id => axios.delete(
-            `${config.apiUrl}/master/doctor-schedules/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-          )),
-          ...scheduleEntries.filter(e => e.id).map(e => axios.put(
-            `${config.apiUrl}/master/doctor-schedules/${e.id}`, e, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-          )),
-          ...scheduleEntries.filter(e => !e.id).map(e => axios.post(
-            `${config.apiUrl}/master/doctor-schedules`, { ...e, doctor_id: editDoctor.id }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-          ))
-        ]);
-        fetchSchedules(editDoctor.id);
-      } else setError(response.data.message || 'Gagal memperbarui data dokter');
-    } catch {
-      setError('Gagal memperbarui data dokter');
-    } finally { setLoading(false); }
-  };
+      let response;
+      if (editDoctor.id) { // UPDATE
+        response = await axios.put(
+          `${config.apiUrl}/master/doctors/${editDoctor.id}`,
+          finalPayload,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
 
-  const handleDelete = async () => {
+        if (response.data.status === 'success') {
+          const schedulesByDay = response.data.data.schedule || {};
+          const flatScheduleList = Object.entries(schedulesByDay).flatMap(([day, slots]) => 
+            slots.map(slot => ({...slot, day_of_week: day, temp_id: slot.id || uuidv4()}))
+          );
+          setState(prev => ({
+            ...prev,
+            success: 'Data dokter berhasil diperbarui!',
+            error: '',
+            scheduleList: flatScheduleList,
+            isEditing: false,
+            loadingSave: false,
+            selectedDoctor: { ...editDoctor, schedule: schedulesByDay },
+            editDoctor: { ...editDoctor, schedule: schedulesByDay },
+          }));
+          await fetchDoctors(); // Refresh daftar dokter
+        } else {
+          throw new Error(response.data.message || 'Gagal memperbarui data.');
+        }
+      } else { // CREATE
+        response = await axios.post(
+          `${config.apiUrl}/master/doctors`,
+          finalPayload,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+
+        if (response.data.status === 'success') {
+          const savedDoctorData = response.data.data;
+          await fetchDoctors();
+          setState(prev => ({
+            ...prev,
+            success: 'Dokter baru berhasil ditambahkan!',
+            error: '',
+            selectedDoctor: savedDoctorData,
+            editDoctor: { ...savedDoctorData },
+            isEditing: false,
+            loadingSave: false,
+          }));
+          await fetchSchedules(savedDoctorData.id);
+        } else {
+          throw new Error(response.data.message || 'Gagal menyimpan data dokter.');
+        }
+      }
+    } catch (err) {
+      setState(prev => ({
+        ...prev,
+        error: err.response?.data?.message || err.message || 'Terjadi kesalahan saat menyimpan data dokter.',
+        success: '',
+        loadingSave: false,
+      }));
+    }
+  }, [editDoctor, scheduleList, fetchDoctors, fetchSchedules]);
+
+  const handleDelete = useCallback(async () => {
     if (!selectedDoctor) return;
-    setLoading(true); setError(''); setSuccess('');
+    setState((prev) => ({ ...prev, loadingDelete: true, error: '', success: '' }));
     try {
       const response = await axios.delete(
         `${config.apiUrl}/master/doctors/${selectedDoctor.id}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
       if (response.data.status === 'success') {
-        setSuccess('Data dokter berhasil dihapus');
-        setSelectedDoctor(null); setEditDoctor(null);
-        fetchDoctors();
-      } else setError(response.data.message || 'Gagal menghapus data dokter');
+        setState((prev) => ({
+          ...prev,
+          success: 'Data dokter berhasil dihapus',
+          selectedDoctor: null,
+          editDoctor: null,
+          scheduleList: [],
+        }));
+        await fetchDoctors();
+      } else {
+        setStateField('error', response.data.message || 'Gagal menghapus data dokter');
+      }
     } catch {
-      setError('Gagal menghapus data dokter');
-    } finally { setLoading(false); }
-  };
+      setStateField('error', 'Gagal menghapus data dokter');
+    } finally {
+      setStateField('loadingDelete', false);
+    }
+  }, [selectedDoctor, fetchDoctors]);
+
+  const handleCancelEdit = useCallback(() => {
+    if (selectedDoctor) {
+    setState((prev) => ({
+      ...prev,
+      error: '',
+      success: '',
+        editDoctor: { ...selectedDoctor },
+      isEditing: false,
+        scheduleList: prev.scheduleList.map(slot => ({
+          ...slot,
+          temp_id: slot.id || uuidv4()
+        }))
+    }));
+      fetchSchedules(selectedDoctor.id);
+    } else {
+      setState((prev) => ({
+        ...prev,
+        error: '',
+        success: '',
+        editDoctor: null,
+        isEditing: false,
+        scheduleList: []
+      }));
+    }
+  }, [selectedDoctor, fetchSchedules]);
 
   const filteredDoctors = () => {
-    if (filter === 'available') {
-      return doctors.filter(doc => doc.status === 'active');
-    } else if (filter === 'inactive') {
-      return doctors.filter(doc => doc.status === 'inactive');
+    let result = [...doctors];
+    if (doctorSearchTerm) {
+      const searchTermLower = doctorSearchTerm.toLowerCase();
+      result = result.filter(
+        (doc) =>
+          doc.name.toLowerCase().includes(searchTermLower) ||
+          (doc.specialization && doc.specialization.toLowerCase().includes(searchTermLower)) ||
+          (doc.email && doc.email.toLowerCase().includes(searchTermLower))
+      );
     }
-    return doctors;
+    if (filter === 'active') {
+      return result.filter((doc) => doc.status === 'Active');
+    } else if (filter === 'inactive') {
+      return result.filter((doc) => doc.status === 'Inactive');
+    }
+    return result;
   };
 
   const getNextSchedule = (doctorId) => {
-    // Fetch schedules for this doctor if available in the current state
-    // This assumes schedules are loaded when a doctor is selected, for preview we show a placeholder
-    if (scheduleEntries.length > 0 && selectedDoctor && selectedDoctor.id === doctorId) {
-      const upcoming = scheduleEntries.find(s => s.doctor_id === doctorId || true);
-      if (upcoming && upcoming.day_of_week && upcoming.start_time) {
-        return `${upcoming.day_of_week.substring(0, 3)}, ${upcoming.start_time}`;
+    const schedules = scheduleList;
+    if (schedules.length > 0 && selectedDoctor?.id === doctorId) {
+      const upcoming = schedules.find((s) => s.doctor_id === doctorId && s.start_time);
+      if (upcoming?.day_of_week && upcoming.start_time) {
+        return `${upcoming.day_of_week.substring(0, 3)}, ${upcoming.start_time.substring(0, 5)}`;
       }
     }
     return 'Belum ada jadwal';
   };
 
-  return (
-    <PageTemplate title="Data Dokter">
-      <style>{styles}</style>
-      {/* Header dengan statistik */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 rounded-xl shadow-md mb-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mt-20 -mr-20 backdrop-blur-sm"></div>
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full -mb-20 -ml-20 backdrop-blur-sm"></div>
-        
-        <div className="relative z-10 flex justify-between items-center">
-          <div className="flex items-center">
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 mr-4 text-white self-start shadow-lg">
-              <Stethoscope size={32} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">Manajemen Dokter</h2>
-              <p className="text-blue-100 mt-1">Kelola data dan jadwal dokter</p>
-            </div>
-          </div>
-          
-          <button 
-            onClick={() => {
-              setSelectedDoctor(null);
-              setEditDoctor({
-                name: '',
-                specialization: '',
-                phone_number: '',
-                email: '',
-                status: 'active'
-              });
-              setScheduleEntries([]);
-              setRemovedScheduleIds([]);
-              setError('');
-              setSuccess('');
-            }}
-            className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center"
-          >
-            <Plus size={18} className="mr-2" />
-            Tambah Dokter
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-4 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm">Total Dokter</p>
-                <p className="text-2xl font-bold">{doctors.length}</p>
-              </div>
-              <div className="bg-white/20 p-2 rounded-lg">
-                <User size={24} />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm">Dokter Aktif</p>
-                <p className="text-2xl font-bold">{doctors.filter(d => d.status === 'active').length}</p>
-              </div>
-              <div className="bg-white/20 p-2 rounded-lg">
-                <CheckCircle size={24} />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm">Tidak Aktif</p>
-                <p className="text-2xl font-bold">{doctors.filter(d => d.status === 'inactive').length}</p>
-              </div>
-              <div className="bg-white/20 p-2 rounded-lg">
-                <XCircle size={24} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex h-full gap-6">
-        {/* Doctor List */}
-        <div className="w-1/2 bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <User className="mr-2 text-blue-500" size={20} />
-                Daftar Dokter
-              </h2>
-              
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                  <Search size={16} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Cari dokter..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  onChange={(e) => {
-                    // Implementasi pencarian sederhana
-                    const searchTerm = e.target.value.toLowerCase();
-                    if (searchTerm) {
-                      setDoctors(doctors.filter(doc => 
-                        doc.name.toLowerCase().includes(searchTerm) || 
-                        (doc.specialization && doc.specialization.toLowerCase().includes(searchTerm))
-                      ));
-                    } else {
-                      fetchDoctors(); // Reset ke data asli jika pencarian kosong
-                    }
-                  }}
-                />
-              </div>
-            </div>
+  const renderDoctorDetailsOrForm = () => {
+    const doctorToDisplay = isEditing ? editDoctor : selectedDoctor;
 
-            {/* Filter Tabs */}
-            <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
-              <button 
-                className={`flex-1 py-2 px-3 rounded-lg transition-all duration-200 flex items-center justify-center ${filter === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`} 
-                onClick={() => setFilter('all')}
-              >
-                <Filter size={14} className="mr-1.5" />
-                Semua
-                <span className="ml-1.5 text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">{doctors.length}</span>
-              </button>
-              <button 
-                className={`flex-1 py-2 px-3 rounded-lg transition-all duration-200 flex items-center justify-center ${filter === 'available' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`} 
-                onClick={() => setFilter('available')}
-              >
-                <CheckCircle size={14} className="mr-1.5" />
-                Aktif
-                <span className="ml-1.5 text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">{doctors.filter(d => d.status === 'active').length}</span>
-              </button>
-              <button 
-                className={`flex-1 py-2 px-3 rounded-lg transition-all duration-200 flex items-center justify-center ${filter === 'inactive' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`} 
-                onClick={() => setFilter('inactive')}
-              >
-                <XCircle size={14} className="mr-1.5" />
-                Non-Aktif
-                <span className="ml-1.5 text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full">{doctors.filter(d => d.status === 'inactive').length}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Loading State */}
-          {loading && (
-            <div className="py-10 text-center text-gray-500 flex flex-col items-center">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <User size={16} className="text-blue-500" />
-                </div>
+        return (
+      <>
+        {/* Fixed Header Section with Glass Effect */}
+        <div className="p-6 md:p-8 border-b border-gray-200 space-y-6 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+          {/* Error and Success Messages with Enhanced Design */}
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-4 rounded-lg flex items-start gap-3 shadow-sm animate-fade-in">
+              <AlertTriangle size={24} className="text-red-600 flex-shrink-0 mt-0.5" /> 
+              <div>
+                <p className="font-semibold text-lg">Gagal!</p>
+                <p className="text-sm mt-1">{error}</p>
               </div>
-              <span className="mt-4 bg-blue-50 text-blue-700 px-3 py-1 rounded-lg animate-pulse">Memuat data dokter...</span>
+            </div>
+          )}
+          {success && (
+            <div className="bg-green-50 border-l-4 border-green-500 text-green-700 px-4 py-4 rounded-lg flex items-start gap-3 shadow-sm animate-fade-in">
+              <CheckCircle size={24} className="text-green-600 flex-shrink-0 mt-0.5" /> 
+              <div>
+                <p className="font-semibold text-lg">Sukses!</p>
+                <p className="text-sm mt-1">{success}</p>
+              </div>
             </div>
           )}
 
-          {/* Doctor List */}
-          <div className="overflow-y-auto max-h-[calc(100vh-24rem)]">
-            {!loading && filteredDoctors().length === 0 && (
-              <div className="py-10 text-center">
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                    <AlertTriangle size={32} className="text-gray-400" />
+          {/* Enhanced Header with Better Visual Hierarchy */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-grow">
+              <div className="flex items-center gap-3 mb-2">
+                {isEditing && !selectedDoctor ? (
+                  <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center">
+                    <Plus size={28} className="text-sky-600" />
                   </div>
-                  <span className="text-lg font-medium text-gray-600 mb-1">Tidak ada dokter</span>
-                  <span className="text-sm text-gray-500">Tidak ada data dokter yang ditemukan</span>
-                </div>
-              </div>
-            )}
-            
-            {!loading && filteredDoctors().map((doc, index) => (
-              <div 
-                key={doc.id} 
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors duration-200 ${selectedDoctor?.id === doc.id ? 'bg-blue-50' : ''}`} 
-                onClick={() => handleSelectDoctor(doc)}
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium shadow-sm ${doc.status === 'active' ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'}`}>
-                      {doc.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-800">{doc.name}</div>
-                      <div className="flex items-center text-xs text-gray-500 mt-0.5">
-                        <Award size={12} className="mr-1 text-blue-500" />
-                        {doc.specialization || 'Spesialisasi tidak tersedia'}
-                      </div>
-                    </div>
+                ) : isEditing ? (
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <Edit3 size={28} className="text-amber-600" />
                   </div>
-                  
-                  <div className="flex flex-col items-end">
-                    <div className={`text-xs px-2 py-0.5 rounded-full ${doc.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {doc.status === 'active' ? 'Aktif' : 'Non-Aktif'}
-                    </div>
-                    <div className="flex items-center text-xs text-gray-500 mt-1.5">
-                      <Clock size={12} className="mr-1" />
-                      {getNextSchedule(doc.id)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Doctor Detail */}
-        <div className="w-1/2 bg-white rounded-xl shadow-sm overflow-hidden">
-          {editDoctor ? (
-            <div className="h-full flex flex-col">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-blue-50 to-white p-6 border-b border-blue-100">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                    <Stethoscope className="mr-2 text-blue-500" size={20} />
-                    {selectedDoctor ? 'Edit Dokter' : 'Tambah Dokter Baru'}
-                  </h3>
-                  <div className="flex gap-2">
-                    {selectedDoctor && (
-                      <button 
-                        className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors duration-200 flex items-center"
-                        onClick={handleDelete}
-                        disabled={loading}
-                      >
-                        <Trash2 size={16} className="mr-1.5" />
-                        Hapus
-                      </button>
-                    )}
-                    <button 
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg transition-colors duration-200 flex items-center shadow-sm"
-                      onClick={handleSave}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-t-white border-white/30 rounded-full animate-spin mr-2"></div>
-                          Menyimpan...
-                        </>
-                      ) : (
-                        <>
-                          <Save size={16} className="mr-1.5" />
-                          Simpan
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Alerts */}
-                {(error || success) && (
-                  <div className="mb-4">
-                    {error && (
-                      <div className="flex items-start bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 animate-fade-in">
-                        <AlertTriangle className="mr-2 flex-shrink-0 mt-0.5" size={16} />
-                        <div>{error}</div>
-                      </div>
-                    )}
-                    {success && (
-                      <div className="flex items-start bg-green-50 text-green-700 p-3 rounded-lg border border-green-200 animate-fade-in">
-                        <CheckCircle className="mr-2 flex-shrink-0 mt-0.5" size={16} />
-                        <div>{success}</div>
-                      </div>
-                    )}
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+                    <Stethoscope size={28} className="text-indigo-600" />
                   </div>
                 )}
-
-                {/* Profile Summary */}
-                <div className="flex items-center gap-4">
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md ${editDoctor.status === 'inactive' ? 'bg-gradient-to-br from-gray-500 to-gray-600' : 'bg-gradient-to-br from-blue-500 to-blue-600'}`}>
-                    {editDoctor.name ? editDoctor.name.charAt(0) : '?'}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xl font-bold text-gray-800">{editDoctor.name || 'Nama Dokter'}</div>
-                    <div className="flex items-center text-gray-500 mt-1">
-                      <Award size={14} className="mr-1.5 text-blue-500" />
-                      {editDoctor.specialization || 'Belum ada spesialisasi'}
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {editDoctor.phone_number && (
-                        <div className="flex items-center text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                          <Phone size={12} className="mr-1.5 text-blue-500" />
-                          {editDoctor.phone_number}
-                        </div>
-                      )}
-                      {editDoctor.email && (
-                        <div className="flex items-center text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                          <Mail size={12} className="mr-1.5 text-blue-500" />
-                          {editDoctor.email}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Content */}
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
-                  <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center">
-                    <User className="mr-2 text-blue-500" size={18} />
-                    Informasi Dokter
-                  </h4>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                          <User size={16} />
-                        </div>
-                        <input
-                          type="text"
-                          value={editDoctor.name ?? ''}
-                          onChange={e => handleInputChange('name', e.target.value)}
-                          className="pl-10 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                          placeholder="Nama lengkap dokter"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Spesialisasi</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                          <Award size={16} />
-                        </div>
-                        <input
-                          type="text"
-                          value={editDoctor.specialization ?? ''}
-                          onChange={e => handleInputChange('specialization', e.target.value)}
-                          className="pl-10 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                          placeholder="Spesialisasi dokter"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                          <Phone size={16} />
-                        </div>
-                        <input
-                          type="text"
-                          value={editDoctor.phone_number ?? ''}
-                          onChange={e => handleInputChange('phone_number', e.target.value)}
-                          className="pl-10 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                          placeholder="Nomor telepon"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                          <Mail size={16} />
-                        </div>
-                        <input
-                          type="email"
-                          value={editDoctor.email ?? ''}
-                          onChange={e => handleInputChange('email', e.target.value)}
-                          className="pl-10 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                          placeholder="Email dokter"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <div className="flex space-x-4">
-                        <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-50 flex-1 ${editDoctor.status === 'active' ? 'border-green-500 bg-green-50 ring-2 ring-green-200' : 'border-gray-300'}`}>
-                          <input
-                            type="radio"
-                            name="status"
-                            value="active"
-                            checked={editDoctor.status === 'active'}
-                            onChange={() => handleInputChange('status', 'active')}
-                            className="mr-2 text-green-600 focus:ring-green-500"
-                          />
-                          <div className="flex items-center">
-                            <CheckCircle size={18} className="mr-2 text-green-600" />
-                            <div>
-                              <div className="font-medium">Aktif</div>
-                              <div className="text-xs text-gray-500">Dokter dapat menerima pasien</div>
-                            </div>
-                          </div>
-                        </label>
-                        
-                        <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-50 flex-1 ${editDoctor.status === 'inactive' ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'}`}>
-                          <input
-                            type="radio"
-                            name="status"
-                            value="inactive"
-                            checked={editDoctor.status === 'inactive'}
-                            onChange={() => handleInputChange('status', 'inactive')}
-                            className="mr-2 text-red-600 focus:ring-red-500"
-                          />
-                          <div className="flex items-center">
-                            <XCircle size={18} className="mr-2 text-red-600" />
-                            <div>
-                              <div className="font-medium">Non-Aktif</div>
-                              <div className="text-xs text-gray-500">Dokter tidak dapat menerima pasien</div>
-                            </div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Schedule Section */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-lg font-semibold text-gray-800 flex items-center">
-                      <Calendar className="mr-2 text-blue-500" size={18} />
-                      Jadwal Praktik
-                    </h4>
-                    
-                    <button 
-                      onClick={addSchedule}
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center"
-                    >
-                      <Plus size={16} className="text-blue-600 mr-1.5" />
-                      Tambah Jadwal
-                    </button>
-                  </div>
-                  
-                  {scheduleEntries.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center">
-                      <Calendar size={36} className="text-gray-400 mb-2" />
-                      <p className="text-gray-600 font-medium">Belum ada jadwal</p>
-                      <p className="text-gray-500 text-sm mt-1 mb-3">Klik tombol "Tambah Jadwal" untuk menambahkan jadwal praktik dokter</p>
-                      <button 
-                        onClick={addSchedule}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-sm hover:shadow"
-                      >
-                        <Plus size={16} className="text-white" />
-                        <span className="text-white">Tambah Jadwal Baru</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="overflow-hidden rounded-lg border border-gray-200">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hari</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mulai</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selesai</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {scheduleEntries.map((schedule, index) => (
-                            <tr key={index} className="hover:bg-blue-50 transition-colors duration-150">
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="relative">
-                                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                                    <Calendar size={14} />
-                                  </div>
-                                  <select 
-                                    value={schedule.day_of_week ?? ''} 
-                                    onChange={e => handleScheduleChange(index, 'day_of_week', e.target.value)}
-                                    className="pl-9 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-                                  >
-                                    <option value="">-- pilih hari --</option>
-                                    <option value="Monday">Senin</option>
-                                    <option value="Tuesday">Selasa</option>
-                                    <option value="Wednesday">Rabu</option>
-                                    <option value="Thursday">Kamis</option>
-                                    <option value="Friday">Jumat</option>
-                                    <option value="Saturday">Sabtu</option>
-                                    <option value="Sunday">Minggu</option>
-                                  </select>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="relative">
-                                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                                    <Clock size={14} />
-                                  </div>
-                                  <input 
-                                    type="time" 
-                                    value={schedule.start_time ?? ''} 
-                                    onChange={e => handleScheduleChange(index, 'start_time', e.target.value)}
-                                    className="pl-9 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                  />
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="relative">
-                                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                                    <Clock size={14} />
-                                  </div>
-                                  <input 
-                                    type="time" 
-                                    value={schedule.end_time ?? ''} 
-                                    onChange={e => handleScheduleChange(index, 'end_time', e.target.value)}
-                                    className="pl-9 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                  />
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="flex items-center space-x-2">
-                                  <label className="flex items-center space-x-1 text-sm">
-                                    <input
-                                      type="checkbox"
-                                      checked={schedule.is_active}
-                                      onChange={e => handleScheduleChange(index, 'is_active', e.target.checked)}
-                                      className="rounded text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span>Aktif</span>
-                                  </label>
-                                  <button 
-                                    onClick={() => removeSchedule(index)}
-                                    className="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg transition-all duration-200 flex items-center justify-center"
-                                    title="Hapus jadwal"
-                                  >
-                                    <Trash2 size={16} className="text-red-600" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  
-                  {scheduleEntries.length > 0 && (
-                    <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-start">
-                      <Info size={16} className="text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-blue-700">
-                        Jadwal yang ditampilkan akan digunakan untuk menentukan ketersediaan dokter. Pastikan jadwal tidak tumpang tindih dengan dokter lain.
-                      </div>
-                    </div>
-                  )}
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800">
+                    {isEditing && !selectedDoctor ? 'Tambah Dokter Baru' : isEditing ? 'Edit Detail Dokter' : 'Detail Dokter'}
+              </h3>
+              <p className="text-gray-500 mt-1 text-sm">
+                {isEditing && !selectedDoctor
+                  ? 'Isi formulir di bawah ini untuk menambahkan dokter baru ke sistem.'
+                  : isEditing
+                  ? `Ubah informasi untuk dokter ${selectedDoctor?.name || ''}. Pastikan data akurat.`
+                  : `Lihat informasi lengkap dan jadwal praktik untuk dokter ${selectedDoctor?.name || ''}.`}
+              </p>
                 </div>
               </div>
             </div>
+            <div className="flex items-center gap-3 flex-shrink-0 mt-4 sm:mt-0">
+              {!isEditing && selectedDoctor && (
+                <button
+                  onClick={() => setStateField('isEditing', true)}
+                  aria-label="Edit dokter"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-sm hover:scale-105"
+                >
+                  <Edit3 size={18} className="transition-transform duration-300 group-hover:rotate-12" /> 
+                  <span>Edit Data</span>
+                </button>
+              )}
+              {isEditing && (
+                <>
+                  <button
+                    onClick={handleSave}
+                    disabled={loadingSave}
+                    aria-label="Simpan perubahan dokter"
+                    className="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-sm disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105"
+                  >
+                    {loadingSave ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Save size={18} className="transition-transform duration-300 group-hover:scale-110" />
+                    )}
+                    <span>{loadingSave ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={loadingSave}
+                    aria-label="Batalkan pengeditan"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all duration-300 flex items-center gap-2 text-sm border border-gray-300 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105"
+                  >
+                    <XCircle size={18} className="transition-transform duration-300 group-hover:scale-110" /> 
+                    <span>Batal</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable Content Section with Enhanced Layout */}
+        <div className="flex-grow overflow-y-auto p-6 md:p-8 space-y-8 animate-fade-in">
+          {/* Form and Schedule Area with Card Layout */}
+          <div className="space-y-8">
+            {/* Doctor Info Card */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 md:p-8">
+            <DoctorInfoForm
+              doctor={doctorToDisplay || { name: '', sip: '', str: '', specialization: '', phone: '', email: '', address: '', is_active: true }}
+              isEditing={isEditing}
+              onChange={handleInputChange}
+            />
+              </div>
+            </div>
+
+            {/* Schedule Card */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 md:p-8">
+            <DoctorSchedule 
+              scheduleList={scheduleList}
+              isEditing={isEditing}
+              onScheduleListChange={handleScheduleListChange}
+            />
+              </div>
+            </div>
+          </div>
+
+          {/* Delete Button Area with Enhanced Design */}
+          {isEditing && selectedDoctor && (
+            <div className="pt-6 border-t border-gray-200 mt-6 flex justify-end">
+              <button
+                onClick={handleDelete}
+                disabled={loadingDelete}
+                aria-label="Hapus dokter ini"
+                className="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-sm disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105"
+              >
+                {loadingDelete ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Trash2 size={18} className="transition-transform duration-300 group-hover:scale-110" />
+                )}
+                <span>{loadingDelete ? 'Menghapus...' : 'Hapus Dokter Ini'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <PageTemplate title="Data Dokter">
+      <style>
+        {`
+          @keyframes customFadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .animate-custom-fade-in-up {
+            animation-name: customFadeInUp;
+            animation-duration: 0.4s;
+            animation-fill-mode: forwards;
+            animation-timing-function: ease-out;
+            opacity: 0; /* Start transparent before animation kicks in with delay */
+          }
+        `}
+      </style>
+      {/* Gradient Header */}
+      <div className="bg-gradient-to-r from-sky-500 via-indigo-500 to-blue-600 rounded-2xl shadow-lg p-8 mb-8 flex items-center justify-between animate-fade-in hover:shadow-xl transition-all duration-300">
+        <div>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3 group">
+            <Stethoscope size={36} className="text-white drop-shadow transition-transform duration-300 group-hover:scale-110" />
+            <span className="transition-all duration-300 group-hover:text-blue-50">Manajemen Dokter</span>
+          </h1>
+          <p className="text-blue-50/80 mt-2 text-lg transition-all duration-300 group-hover:text-blue-50">Kelola data dokter, jadwal praktik, dan informasi penting lainnya.</p>
+        </div>
+        <button
+          onClick={() => {
+            setState((prev) => ({
+              ...prev,
+              selectedDoctor: null,
+              editDoctor: {
+                name: '',
+                sip: '',
+                str: '',
+                specialization: '',
+                phone: '',
+                email: '',
+                address: '',
+                is_active: true,
+              },
+              scheduleList: [],
+              removedScheduleIds: [],
+              error: '',
+              success: '',
+              isEditing: true,
+            }));
+          }}
+          className="bg-white/90 hover:bg-white text-sky-700 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-lg border border-sky-200 hover:scale-105 hover:border-sky-300"
+          aria-label="Tambah dokter baru"
+        >
+          <Plus size={24} className="text-sky-600 transition-transform duration-300 group-hover:rotate-90" /> 
+          <span className="transition-all duration-300">Tambah Dokter Baru</span>
+        </button>
+      </div>
+
+      <div className="flex flex-row gap-6 min-h-[calc(100vh-180px)]">
+        {/* Doctor List Sidebar */}
+        <div className="w-1/3 bg-white/80 rounded-2xl shadow-lg border border-gray-200 flex flex-col max-h-[calc(100vh-180px)] animate-slide-in">
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-xl font-bold text-sky-700 flex items-center gap-2">
+              <Users size={22} className="text-sky-500" />
+              Daftar Dokter
+            </h3>
+            <div className="relative mt-4">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Cari berdasarkan nama, spesialisasi..."
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors duration-200 bg-gray-50 hover:bg-gray-100 focus:bg-white"
+                value={doctorSearchTerm}
+                onChange={(e) => setStateField('doctorSearchTerm', e.target.value)}
+                aria-label="Cari dokter"
+              />
+            </div>
+            <div className="flex space-x-2 mt-4 bg-gray-100 p-1 rounded-lg">
+              {['all', 'active', 'inactive'].map((f) => (
+                <button
+                  key={f}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center ${
+                    filter === f
+                      ? `bg-white shadow-md ${
+                          f === 'all' ? 'text-blue-600' : f === 'active' ? 'text-green-600' : 'text-red-600'
+                        }`
+                      : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                  }`}
+                  onClick={() => setStateField('filter', f)}
+                  aria-label={`Filter dokter ${f === 'all' ? 'semua' : f === 'active' ? 'aktif' : 'non-aktif'}`}
+                >
+                  {f === 'all' && <Filter size={16} className="mr-1.5" />}
+                  {f === 'active' && <CheckCircle size={16} className="mr-1.5" />}
+                  {f === 'inactive' && <XCircle size={16} className="mr-1.5" />}
+                  {f === 'all' ? 'Semua' : f === 'active' ? 'Aktif' : 'Non-Aktif'}
+                  <span
+                    className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                      f === 'all' ? 'bg-blue-100 text-blue-800' : f === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {f === 'all' ? doctors.length : doctors.filter((d) => (f === 'active' ? d.status === 'Active' : d.status === 'Inactive')).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="overflow-y-auto flex-grow max-h-[calc(100vh-300px)] p-2">
+            {loadingFetch ? (
+              <div className="flex flex-col items-center justify-center text-center py-10 text-gray-500">
+                <div className="relative">
+                  <div className="w-12 h-12 border-4 border-t-white border-white/30 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Users size={20} className="text-blue-600" />
+                  </div>
+                </div>
+                <span className="mt-4 text-sm font-medium text-gray-600">Memuat daftar dokter...</span>
+              </div>
+            ) : filteredDoctors().length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center py-10 px-4">
+                <Users size={48} className="text-gray-400 mb-4" />
+                <h4 className="text-lg font-semibold text-gray-700 mb-1">
+                  {filter === 'all' ? 'Belum Ada Dokter' : filter === 'active' ? 'Tidak Ada Dokter Aktif' : 'Tidak Ada Dokter Non-Aktif'}
+                </h4>
+                <p className="text-sm text-gray-500">
+                  {filter === 'all'
+                    ? 'Saat ini belum ada data dokter di sistem.'
+                    : `Tidak ada dokter yang cocok dengan filter "${filter === 'active' ? 'Aktif' : 'Non-Aktif'}" saat ini.`}
+                </p>
+                {filter !== 'all' && (
+                  <button
+                    onClick={() => setStateField('filter', 'all')}
+                    className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-150"
+                    aria-label="Lihat semua dokter"
+                  >
+                    Lihat Semua Dokter
+                  </button>
+                )}
+              </div>
+            ) : (
+              filteredDoctors().map((doc, index) => (
+                <div
+                  key={doc.id}
+                  className={`animate-custom-fade-in-up cursor-pointer transition-all duration-300 ease-out rounded-lg mx-2 mb-2 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-1 px-4 py-3.5 border-l-4 ${
+                    selectedDoctor?.id === doc.id 
+                      ? 'bg-gradient-to-r from-sky-50 to-white border-sky-500 shadow-lg transform scale-[1.02]' 
+                      : 'bg-white hover:bg-gray-50 border-transparent hover:border-sky-300 hover:shadow-md'
+                  }`}
+                  onClick={() => handleSelectDoctor(doc)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSelectDoctor(doc)}
+                  role="button"
+                  tabIndex={0}
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                  aria-label={`Pilih dokter ${doc.name}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-md transition-transform duration-300 hover:scale-110 ${
+                          doc.status === 'Active' 
+                            ? 'bg-gradient-to-br from-sky-500 to-indigo-600' 
+                            : 'bg-gradient-to-br from-slate-400 to-slate-600'
+                        }`}
+                      >
+                        {doc.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-sm font-semibold truncate transition-colors duration-300 ${
+                          selectedDoctor?.id === doc.id ? 'text-sky-800 font-bold' : 'text-gray-700 hover:text-sky-700'
+                        }`}>
+                          {doc.name}
+                        </div>
+                        <div className={`flex items-center text-xs mt-1 transition-colors duration-300 ${
+                          selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-500 hover:text-gray-700'
+                        }`}>
+                          <Shield size={16} className={`mr-1.5 shrink-0 transition-colors duration-300 ${
+                            doc.status === 'Active' ? 'text-emerald-500' : 'text-rose-500'
+                          }`} />
+                          <span className="truncate">{doc.specialization || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end flex-shrink-0 ml-2">
+                      <div
+                        className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all duration-300 ${
+                          doc.status === 'Active' 
+                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
+                            : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                        }`}
+                      >
+                        {doc.status === 'Active' ? 'Aktif' : 'Non-Aktif'}
+                      </div>
+                      <div className={`flex items-center text-xs mt-2 transition-colors duration-300 ${
+                        selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-500 hover:text-gray-700'
+                      }`}>
+                        <Clock size={16} className={`mr-1.5 transition-colors duration-300 ${
+                          selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-400 group-hover:text-gray-600'
+                        }`} />
+                        {getNextSchedule(doc.id)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Doctor Details/Form Area */}
+        <div className="w-2/3 bg-white/90 rounded-2xl shadow-lg border border-gray-200 flex flex-col max-h-[calc(100vh-180px)] animate-fade-in">
+          {editDoctor && (isEditing || selectedDoctor) ? (
+            renderDoctorDetailsOrForm()
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500 italic">Pilih dokter untuk melihat atau mengedit data</div>
+            <div className="flex flex-col items-center justify-center text-center p-10 bg-gradient-to-b from-sky-50 to-white rounded-2xl shadow-inner animate-fade-in">
+              <Users size={80} className="mb-6 text-gray-300 animate-pulse" />
+              <h3 className="text-3xl font-bold text-sky-700 mb-3">Manajemen Dokter</h3>
+              <p className="max-w-lg text-gray-600 text-lg">
+                Mulai dengan memilih dokter dari daftar atau tambahkan dokter baru untuk mengelola jadwal dan informasi.
+              </p>
+              <button
+                onClick={() => {
+                  setState((prev) => ({
+                    ...prev,
+                    selectedDoctor: null,
+                    editDoctor: {
+                      name: '',
+                      sip: '',
+                      str: '',
+                      specialization: '',
+                      phone: '',
+                      email: '',
+                      address: '',
+                      is_active: true,
+                    },
+                    scheduleList: [],
+                    removedScheduleIds: [],
+                    error: '',
+                    success: '',
+                    isEditing: true,
+                  }));
+                }}
+                className="mt-6 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 text-lg"
+                aria-label="Tambah dokter baru"
+              >
+                <Plus size={24} className="mr-2" /> Tambah Dokter Baru
+              </button>
+            </div>
           )}
         </div>
       </div>

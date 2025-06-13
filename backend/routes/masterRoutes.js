@@ -18,4 +18,10 @@ router.post('/doctor-schedules', authMiddleware, masterController.createDoctorSc
 router.put('/doctor-schedules/:id', authMiddleware, masterController.updateDoctorSchedule);
 router.delete('/doctor-schedules/:id', authMiddleware, masterController.deleteDoctorSchedule);
 
+//Obat (Medicines)
+router.get('/medicines', authMiddleware, masterController.getAllMedicines);
+router.post('/medicines', authMiddleware, masterController.createMedicine);
+router.put('/medicines/:id', authMiddleware, masterController.updateMedicine);
+router.delete('/medicines/:id', authMiddleware, masterController.deleteMedicine);
+
 module.exports = router;

@@ -21,10 +21,9 @@ const doctorController = {
   
       // Ambil jadwal hari untuk semua dokter
       const [schedules] = await pool.query(`
-        SELECT doctor_id, day_of_week
+        SELECT doctor_id, day_of_week, start_time, end_time, is_active
         FROM doctor_schedule
-        WHERE is_active = 1
-        GROUP BY doctor_id, day_of_week
+        ORDER BY doctor_id, day_of_week, start_time
       `);
   
       // Gabungkan jadwal ke masing-masing dokter
@@ -32,14 +31,14 @@ const doctorController = {
         const docSchedules = schedules
           .filter(sch => sch.doctor_id === doc.id)
           .map(sch => ({
-            day_of_week: sch.day_of_week,
+            day_of_week: sch.day_of_week.toLowerCase(), // Ensure lowercase for consistency
             start_time: sch.start_time,
             end_time: sch.end_time,
-            is_active: true
+            is_active: !!sch.is_active // Convert to boolean (tinyint(1) to true/false)
           }));
         return {
           ...doc,
-          schedule: docSchedules // array of day_of_week, misal: ['monday', 'wednesday']
+          schedule: docSchedules // Now an array of schedule objects with time
         };
       });
   
@@ -80,32 +79,66 @@ const doctorController = {
   },
 
   updateDoctor: async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+      await connection.beginTransaction();
       const { id } = req.params;
-      const { name, specialization, phone_number, email, schedule, status } = req.body;
+      const { name, specialization, phone_number, email, status, schedule = [] } = req.body;
 
-      const [result] = await pool.query(
-        'UPDATE doctors SET name = ?, specialization = ?, phone_number = ?, email = ?, schedule = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [name, specialization, phone_number, email, schedule, status, id]
+      // 1. Update doctor's details
+      await connection.query(
+        'UPDATE doctors SET name = ?, specialization = ?, phone_number = ?, email = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, specialization, phone_number, email, status, id]
       );
 
-      if (result.affectedRows === 0) {
-        return res.status(404).json({
-          status: 'error',
-          message: 'Data dokter tidak ditemukan'
-        });
+      // 2. Delete all existing schedules for this doctor
+      await connection.query('DELETE FROM doctor_schedule WHERE doctor_id = ?', [id]);
+
+      // 3. Insert new schedules if any are provided
+      if (schedule.length > 0) {
+        const scheduleValues = schedule.map(s => [id, s.day_of_week, s.start_time, s.end_time, s.is_active]);
+        await connection.query(
+          'INSERT INTO doctor_schedule (doctor_id, day_of_week, start_time, end_time, is_active) VALUES ?',
+          [scheduleValues]
+        );
       }
+
+      await connection.commit();
+
+      // Fetch the updated schedules to return to the frontend
+      const [newSchedules] = await connection.query(
+        'SELECT id, day_of_week, start_time, end_time FROM doctor_schedule WHERE doctor_id = ? ORDER BY FIELD(day_of_week, "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"), start_time',
+        [id]
+      );
+
+      // Group schedules by day for the frontend
+      const schedulesByDay = newSchedules.reduce((acc, schedule) => {
+        const day = schedule.day_of_week;
+        if (!acc[day]) {
+          acc[day] = [];
+        }
+        const { day_of_week, ...rest } = schedule;
+        acc[day].push(rest);
+        return acc;
+      }, {});
 
       res.json({
         status: 'success',
-        message: 'Data dokter berhasil diperbarui'
+        message: 'Data dokter dan jadwal berhasil diperbarui',
+        data: {
+          schedule: schedulesByDay
+        }
       });
+
     } catch (error) {
-      console.error('Error in updateDoctor:', error);
+      await connection.rollback();
+      console.error('Error in updateDoctor transaction:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Gagal memperbarui data dokter'
+        message: 'Gagal memperbarui data dokter. Transaksi dibatalkan.'
       });
+    } finally {
+      connection.release();
     }
   },
 
@@ -376,8 +409,81 @@ const doctorScheduleController = {
   }
 };
 
+const medicineController = {
+  getAllMedicines: async (req, res) => {
+    try {
+      const [medicines] = await pool.query(`
+        SELECT id, name, unit, price, delt_flg
+        FROM medicines
+        WHERE delt_flg = 'N'
+        ORDER BY name
+      `);
+      res.json({ status: 'success', data: medicines });
+    } catch (error) {
+      console.error('Error in getAllMedicines:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal mengambil data obat' });
+    }
+  },
+
+  createMedicine: async (req, res) => {
+    try {
+      const { name, unit, price } = req.body;
+      if (!name || !unit || price === undefined) {
+        return res.status(400).json({ status: 'error', message: 'Nama, satuan, dan harga wajib diisi' });
+      }
+      const [result] = await pool.query(
+        'INSERT INTO medicines (name, unit, price, delt_flg) VALUES (?, ?, ?, "N")',
+        [name, unit, price]
+      );
+      res.status(201).json({ status: 'success', message: 'Obat berhasil ditambahkan', data: { id: result.insertId } });
+    } catch (error) {
+      console.error('Error in createMedicine:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal menambah obat' });
+    }
+  },
+
+  updateMedicine: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, unit, price } = req.body;
+      if (!name || !unit || price === undefined) {
+        return res.status(400).json({ status: 'error', message: 'Nama, satuan, dan harga wajib diisi' });
+      }
+      const [result] = await pool.query(
+        'UPDATE medicines SET name = ?, unit = ?, price = ? WHERE id = ? AND delt_flg = "N"',
+        [name, unit, price, id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Obat tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Obat berhasil diperbarui' });
+    } catch (error) {
+      console.error('Error in updateMedicine:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal memperbarui obat' });
+    }
+  },
+
+  deleteMedicine: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [result] = await pool.query(
+        'UPDATE medicines SET delt_flg = "Y" WHERE id = ?',
+        [id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Obat tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Obat berhasil dihapus' });
+    } catch (error) {
+      console.error('Error in deleteMedicine:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal menghapus obat' });
+    }
+  },
+};
+
 module.exports = { 
   ...doctorController, 
   ...patientController,
-  ...doctorScheduleController 
+  ...doctorScheduleController,
+  ...medicineController
 };

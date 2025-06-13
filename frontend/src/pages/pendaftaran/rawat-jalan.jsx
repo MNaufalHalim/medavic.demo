@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, addDays, startOfToday } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { id, enUS } from 'date-fns/locale';
 import axios from 'axios';
 import config from '../../config';
 import Select from 'react-select';
@@ -52,7 +52,7 @@ const scrollbarStyles = `
   }
 `;
 
-const todayName = format(new Date(), 'EEEE').toLowerCase();
+
 
 const RawatJalan = () => {
   const getAvailableDoctors = (currentSectionIdx) => {
@@ -63,16 +63,29 @@ const RawatJalan = () => {
     );
   };
 
-  const getDoctorStatusToday = (doctor) => {
-    if (!doctor || !Array.isArray(doctor.schedule)) return "not available";
-  
-    const dayName = todayName;
-  
-    return doctor.schedule.some(
-      (sch) => sch.day_of_week === dayName && sch.is_active
-    )
-      ? "available"
-      : "not available";
+  const getDoctorStatusOnDate = (doctor, date) => {
+  console.log(`[STATUS_CHECK] Doctor: ${doctor?.name}, Date: ${date}`);
+  if (doctor && doctor.schedule && doctor.schedule.length > 0) {
+    console.log(`[STATUS_CHECK] Dr. ${doctor.name}'s schedule:`, JSON.stringify(doctor.schedule, null, 2));
+  } else if (doctor) {
+    console.log(`[STATUS_CHECK] Dr. ${doctor.name} has no schedule or empty schedule.`);
+  }
+
+  if (!doctor || !Array.isArray(doctor.schedule) || doctor.schedule.length === 0) {
+    console.log(`[STATUS_CHECK] Dr. ${doctor?.name} - No schedule data, returning 'not available'.`);
+    return "not available";
+  }
+
+    const dayName = format(new Date(date), 'EEEE', { locale: enUS }).toLowerCase();
+  console.log(`[STATUS_CHECK] Calculated dayName: '${dayName}' (using enUS) for date: ${date}`);
+    const isAvailable = doctor.schedule.some(
+      (sch) => {
+        console.log(`[STATUS_CHECK]   Comparing: Schedule Day='${sch.day_of_week?.toLowerCase()}', Calculated Day='${dayName}', IsActive=${sch.is_active}`);
+        return sch.day_of_week.toLowerCase() === dayName && sch.is_active;
+      }
+    );
+    console.log(`[STATUS_CHECK] Dr. ${doctor?.name} - Final availability for ${dayName}: ${isAvailable}`);
+    return isAvailable ? "available" : "not available";
   };
 
   const [dateRange, setDateRange] = useState({
@@ -141,23 +154,36 @@ const RawatJalan = () => {
     return hour === timeHour;
   };
 
-  const isDoctorAvailable = (doctorId, date, time) => {
+  const isDoctorAvailable = (doctorId, appointmentDate, timeSlot) => {
     const doctor = doctors.find(d => d.id === doctorId);
     if (!doctor || !Array.isArray(doctor.schedule)) return false;
   
-    const dayName = format(date, 'EEEE').toLowerCase();
+    const dayName = format(new Date(appointmentDate), 'EEEE', { locale: enUS }).toLowerCase();
+  // console.log(`[isDoctorAvailable] Checking for Dr.ID ${doctorId} on ${dayName} (${appointmentDate}) at ${timeSlot}`);
   
-    return doctor.schedule.some(schedule => {
-      if (!schedule) return false;
-      if (schedule.day_of_week !== dayName) return false;
-      if (schedule.is_active === false) return false;
-      
-      if (!schedule.start_time || !schedule.end_time) return false;
-      
-      const startTime = schedule.start_time.substring(0, 5);
-      const endTime = schedule.end_time.substring(0, 5);
-      
-      return time >= startTime && time <= endTime;
+    return doctor.schedule.some(sch => {
+      // console.log(`[isDoctorAvailable]   Comparing with schedule: Day=${sch.day_of_week}, Start=${sch.start_time}, End=${sch.end_time}, Active=${sch.is_active}`);
+    if (!sch || sch.day_of_week !== dayName || !sch.is_active) {
+      return false;
+    }
+
+    // Ensure start_time and end_time exist
+    if (!sch.start_time || !sch.end_time) {
+      // console.log(`[isDoctorAvailable]   Missing start_time or end_time for a schedule on ${dayName}`);
+      return false;
+    }
+
+    const scheduleStartTime = sch.start_time.substring(0, 5); // HH:mm
+    const scheduleEndTime = sch.end_time.substring(0, 5);   // HH:mm
+
+    // Dokter tersedia jika timeSlot >= scheduleStartTime DAN timeSlot < scheduleEndTime
+    // Contoh: Slot 09:00, Jadwal 09:00-12:00. 09:00 >= 09:00 (true) && 09:00 < 12:00 (true) -> AVAILABLE
+    // Contoh: Slot 12:00, Jadwal 09:00-12:00. 12:00 >= 09:00 (true) && 12:00 < 12:00 (false) -> NOT AVAILABLE (slot 12:00 adalah awal slot berikutnya)
+    const isAvailableInSlot = timeSlot >= scheduleStartTime && timeSlot < scheduleEndTime;
+    // if (isAvailableInSlot) {
+    //   console.log(`[isDoctorAvailable]     MATCH! Dr.ID ${doctorId} available at ${timeSlot} (Schedule: ${scheduleStartTime}-${scheduleEndTime} on ${dayName})`);
+    // }
+    return isAvailableInSlot;
     });
   };
 
@@ -235,9 +261,13 @@ const RawatJalan = () => {
   };
 
   useEffect(() => {
-    fetchAppointments();
     fetchDoctors();
-  }, [dateRange]);
+  }, []);
+
+  useEffect(() => {
+    console.log('[EFFECT] dateRange.start changed to:', dateRange.start, 'Fetching appointments...');
+    fetchAppointments();
+  }, [dateRange.start]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -915,8 +945,8 @@ const RawatJalan = () => {
                                   {appointmentCount} {appointmentCount === 1 ? 'Pasien' : 'Pasien'}
                                 </span>
                               </div>
-                              <div className={`ml-2 text-xs px-2 py-1 rounded-lg flex items-center ${getDoctorStatusToday(doctor) === "available" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
-                                {getDoctorStatusToday(doctor) === "available" ? 
+                              <div className={`ml-2 text-xs px-2 py-1 rounded-lg flex items-center ${getDoctorStatusOnDate(doctor, dateRange.start) === "available" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
+                                {getDoctorStatusOnDate(doctor, dateRange.start) === "available" ? 
                                   <><CheckCircle size={12} className="mr-1" /> Tersedia</> : 
                                   <><AlertCircle size={12} className="mr-1" /> Tidak Tersedia</>
                                 }
@@ -960,62 +990,74 @@ const RawatJalan = () => {
                               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 shadow-sm"
                             />
                           </div>
+                  </div>
+                  <div className="overflow-y-auto max-h-[300px] doctor-list-scrollable">
+                    {(() => {
+                      const availableDoctorsForSection = getAvailableDoctors(selectedSection);
+                      let doctorsToDisplay = availableDoctorsForSection;
+
+                      if (doctorSearchTerm) {
+                        doctorsToDisplay = availableDoctorsForSection.filter(d => 
+                          d.name.toLowerCase().includes(doctorSearchTerm.toLowerCase())
+                        );
+                      }
+
+                      // Sort doctors: available first, then by name
+                      doctorsToDisplay.sort((a, b) => {
+                        const statusA = getDoctorStatusOnDate(a, dateRange.start);
+                        const statusB = getDoctorStatusOnDate(b, dateRange.start);
+                        if (statusA === "available" && statusB !== "available") return -1;
+                        if (statusA !== "available" && statusB === "available") return 1;
+                        return a.name.localeCompare(b.name); // Alphabetical sort for same status
+                      });
+
+                      if (doctorsToDisplay.length === 0) {
+                        return (
+                          <div className="p-6 text-center text-gray-500">
+                            {doctorSearchTerm ? <Search size={40} className="mx-auto mb-2 text-gray-300" /> : <Stethoscope size={40} className="mx-auto mb-2 text-gray-300" />}
+                            <p>{doctorSearchTerm ? 'Tidak ada dokter yang cocok.' : 'Tidak ada dokter tersedia.'}</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="p-2 grid gap-2">
+                          {doctorsToDisplay.map(doc => (
+                            <div
+                              key={doc.id}
+                              onClick={() => {
+                                handleSelectDoctor(doc.id, selectedSection);
+                                setShowDoctorModal(false);
+                                setDoctorSearchTerm('');
+                              }}
+                              className="flex items-center justify-between p-3 hover:bg-blue-50 cursor-pointer rounded-lg transition-colors duration-150 ease-in-out border border-transparent hover:border-blue-100"
+                            >
+                              <div className="flex-grow pr-3">
+                                <div className="font-semibold text-gray-800">
+                                  Dr. {doc.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {doc.specialization || 'Spesialis Umum'}
+                                </div>
+                              </div>
+                              <div className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center ${getDoctorStatusOnDate(doc, dateRange.start) === "available" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
+                                {getDoctorStatusOnDate(doc, dateRange.start) === "available" ? 
+                                  <><CheckCircle size={12} className="mr-1" /> Tersedia</> : 
+                                  <><AlertCircle size={12} className="mr-1" /> Tidak Tersedia</>
+                                }
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div className="overflow-y-auto max-h-[340px]">
-                          {getAvailableDoctors(selectedSection).length === 0 ? (
-                            <div className="p-6 text-center text-gray-500">
-                              <Stethoscope size={40} className="mx-auto mb-2 text-gray-300" />
-                              <p>Tidak ada dokter tersedia</p>
-                            </div>
-                          ) : getAvailableDoctors(selectedSection)
-                            .filter(d => d.name.toLowerCase().includes(doctorSearchTerm.toLowerCase()))
-                            .length === 0 ? (
-                            <div className="p-6 text-center text-gray-500">
-                              <Search size={40} className="mx-auto mb-2 text-gray-300" />
-                              <p>Tidak ada hasil pencarian</p>
-                            </div>
-                          ) : (
-                            <div className="p-2 grid gap-2">
-                              {getAvailableDoctors(selectedSection)
-                                .filter(d => d.name.toLowerCase().includes(doctorSearchTerm.toLowerCase()))
-                                .map(doctor => (
-                                  <div
-                                    key={doctor.id}
-                                    onClick={() => {
-                                      handleSelectDoctor(doctor.id, selectedSection);
-                                      setShowDoctorModal(false);
-                                      setDoctorSearchTerm('');
-                                    }}
-                                    className="w-full p-3 text-left hover:bg-blue-50 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-150"
-                                  >
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-medium shadow-sm">
-                                      {doctor.name.charAt(0)}
-                                    </div>
-                                    <div className="flex-1">
-                                      <div className="font-medium text-gray-800">
-                                        Dr. {doctor.name}
-                                      </div>
-                                      <div className="text-sm text-gray-500">
-                                        {doctor.specialization || 'Spesialis Umum'}
-                                      </div>
-                                    </div>
-                                    <div className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center ${getDoctorStatusToday(doctor) === "available" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
-                                      {getDoctorStatusToday(doctor) === "available" ? 
-                                        <><CheckCircle size={12} className="mr-1" /> Tersedia</> : 
-                                        <><AlertCircle size={12} className="mr-1" /> Tidak Tersedia</>
-                                      }
-                                    </div>
-                                  </div>
-                                ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
-              );
-            })}
+              )}
+            </div>
+          </div>
+        );
+      })}
           </div>
 
           <div className="grid grid-cols-[80px_repeat(3,1fr)] relative">
