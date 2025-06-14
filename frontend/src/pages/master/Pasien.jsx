@@ -17,6 +17,9 @@ const Pasien = () => {
   const [visitHistory, setVisitHistory] = useState([]);
   const [editMessage, setEditMessage] = useState(null);
   const [editError, setEditError] = useState(null);
+  const [loadingModal, setLoadingModal] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loadingCetak, setLoadingCetak] = useState(false);
 
   useEffect(() => {
     fetchPatients();
@@ -42,17 +45,21 @@ const Pasien = () => {
   };
 
   const fetchVisitHistory = async (no_rm) => {
+    setLoadingHistory(true);
     try {
       const res = await axios.get(`${config.apiUrl}/medical/patients/${no_rm}/visits`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.data.success) setVisitHistory(res.data.data || []);
     } catch {}
+    setLoadingHistory(false);
   };
 
   const openModal = (patient) => {
+    setLoadingModal(true);
     setSelected(patient);
     setModalOpen(true);
+    setTimeout(() => setLoadingModal(false), 400); // Simulasi animasi modal
   };
   const closeModal = () => {
     setModalOpen(false);
@@ -149,7 +156,10 @@ const Pasien = () => {
           <tbody className="bg-white divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={5} className="text-center py-10 text-gray-400">Memuat data pasien...</td>
+                <td colSpan={5} className="text-center py-10">
+                  <Loader2 className="animate-spin text-sky-400 mx-auto" size={32} />
+                  <div className="text-sky-400 mt-2">Memuat data pasien...</div>
+                </td>
               </tr>
             ) : error ? (
               <tr>
@@ -195,6 +205,11 @@ const Pasien = () => {
           {/* Right sheet modal dengan animasi slide-in */}
           <div className="fixed inset-y-0 right-0 z-50 flex items-stretch justify-end pointer-events-none p-5">
             <div className="bg-white border-l border-gray-100 rounded-xl shadow-2xl w-full max-w-full h-full flex flex-row pointer-events-auto animate-slide-in-right transition-all duration-500 relative overflow-y-auto">
+              {loadingModal && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur rounded-xl animate-fade-in">
+                  <Loader2 className="animate-spin text-sky-500" size={48} />
+                </div>
+              )}
               {/* Sidebar Sticky */}
               <div className="sticky top-0 self-start h-full flex flex-col items-center bg-gradient-to-b from-sky-50 to-white rounded-l-xl border-r border-gray-100 shadow-sm min-w-[70px] z-20 py-10 px-2">
                 <button
@@ -217,6 +232,16 @@ const Pasien = () => {
               {/* Panel Konten History/Cetak */}
               {activeTab && (
                 <div className="h-full flex flex-col bg-white/70 backdrop-blur-xl rounded-r-xl shadow-xl w-[370px] max-w-full animate-slide-in-left transition-all duration-500 relative overflow-y-auto scrollbar-thin scrollbar-thumb-sky-100 scrollbar-track-transparent z-10">
+                  {activeTab==='history' && loadingHistory && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70 backdrop-blur rounded-xl animate-fade-in">
+                      <Loader2 className="animate-spin text-indigo-500" size={38} />
+                    </div>
+                  )}
+                  {activeTab==='cetak' && loadingCetak && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70 backdrop-blur rounded-xl animate-fade-in">
+                      <Loader2 className="animate-spin text-blue-500" size={38} />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-sky-50/80 to-white/80">
                     <div className="font-bold text-lg text-sky-700 flex items-center gap-2">
                       {activeTab==='edit' && (<><Edit size={22} className="text-sky-500 drop-shadow"/> Edit Pasien</>)}
