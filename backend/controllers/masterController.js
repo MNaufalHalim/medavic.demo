@@ -206,6 +206,48 @@ const patientController = {
         message: 'Gagal mencari data pasien'
       });
     }
+  },
+
+  getAllPatients: async (req, res) => {
+    try {
+      const [patients] = await pool.query(`
+        SELECT id, no_rm, nik, nama_lengkap, tanggal_lahir, jenis_kelamin, alamat, no_telepon, email, created_at, delt_flg
+        FROM pasien
+        WHERE delt_flg = 'N'
+        ORDER BY nama_lengkap
+      `);
+      // Tambahkan status aktif/tidak aktif
+      const result = patients.map(p => ({
+        ...p,
+        status: p.delt_flg === 'N' ? 'Active' : 'Inactive',
+        birth_date: p.tanggal_lahir,
+        gender: p.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan',
+        phone_number: p.no_telepon,
+        address: p.alamat
+      }));
+      res.json({ status: 'success', data: result });
+    } catch (error) {
+      console.error('Error in getAllPatients:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal mengambil data pasien' });
+    }
+  },
+
+  updatePatient: async (req, res) => {
+    try {
+      const { no_rm } = req.params;
+      const { nama_lengkap, email, phone_number, tanggal_lahir, jenis_kelamin, alamat, nik } = req.body;
+      const [result] = await pool.query(
+        'UPDATE pasien SET nama_lengkap=?, email=?, no_telepon=?, tanggal_lahir=?, jenis_kelamin=?, alamat=?, nik=? WHERE no_rm=?',
+        [nama_lengkap, email, phone_number, tanggal_lahir, jenis_kelamin, alamat, nik, no_rm]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Pasien tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Data pasien berhasil diupdate' });
+    } catch (error) {
+      console.error('Update pasien error:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal update pasien' });
+    }
   }
 };
 

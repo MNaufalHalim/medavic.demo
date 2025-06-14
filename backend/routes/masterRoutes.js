@@ -4,7 +4,9 @@ const masterController = require('../controllers/masterController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 //Pasien
+router.get('/patients', authMiddleware, masterController.getAllPatients);
 router.get('/patients/search', authMiddleware, masterController.searchPatients);
+router.put('/patients/:no_rm', authMiddleware, masterController.updatePatient);
 
 //Doctor
 router.get('/doctors/', authMiddleware, masterController.getAllDoctors);
