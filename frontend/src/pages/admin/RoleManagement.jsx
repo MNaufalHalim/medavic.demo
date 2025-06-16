@@ -41,10 +41,10 @@ const RoleManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const [rolesRes, menusRes] = await Promise.all([
-        axios.get(apiUrl('api/roles'), {
+        axios.get(apiUrl('roles'), {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(apiUrl('api/menus'), {  // Changed from /api/menu to /api/menus
+        axios.get(apiUrl('menus'), {  // Changed from /menu to /menus
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -69,7 +69,7 @@ const RoleManagement = () => {
   const fetchPrivileges = async (roleId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(apiUrl(`api/roles/${roleId}/privilege`), {
+      const response = await axios.get(apiUrl(`roles/${roleId}/privilege`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -123,7 +123,7 @@ const RoleManagement = () => {
       }));
 
       await axios.post(
-        apiUrl(`api/roles/${selectedRole.id}/privilege`),
+        apiUrl(`roles/${selectedRole.id}/privilege`),
         { privileges: privilegeArray },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -139,11 +139,11 @@ const RoleManagement = () => {
     try {
       const token = localStorage.getItem('token');
       if (modalMode === 'create') {
-        await axios.post(apiUrl('api/roles'), roleForm, {
+        await axios.post(apiUrl('roles'), roleForm, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.put(apiUrl(`api/roles/${selectedRole.id}`), roleForm, {
+        await axios.put(apiUrl(`roles/${selectedRole.id}`), roleForm, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -162,7 +162,7 @@ const RoleManagement = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(apiUrl(`api/roles/${role.id}`), {
+      await axios.delete(apiUrl(`roles/${role.id}`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchRolesAndMenus();
@@ -248,6 +248,87 @@ const RoleManagement = () => {
       'access': 'Akses',
     };
     return labels[privilege] || privilege;
+  };
+
+  // Komponen TreeMenu untuk menampilkan menu dan sub-menu secara tree minimalis
+  const TreeMenu = ({ menus, privileges, onPrivilegeChange, expandedMenus, toggleMenuExpanded, getMenuIcon, getPrivilegeLabel, searchQuery }) => {
+    // Group parent & children
+    const parentMenus = menus.filter(menu => !menu.parent_id);
+    const getChildMenus = (parentId) => menus.filter(menu => menu.parent_id === parentId);
+
+    // Jika ada search, filter parent & child agar parent tetap tampil jika ada child yang cocok
+    const filterMenuTree = (parent) => {
+      if (!searchQuery) return true;
+      const childMenus = getChildMenus(parent.id);
+      // Cek parent cocok
+      if (parent.menu_name.toLowerCase().includes(searchQuery.toLowerCase())) return true;
+      // Cek ada child yang cocok
+      return childMenus.some(child => child.menu_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    };
+    const filterChild = (child) => {
+      if (!searchQuery) return true;
+      return child.menu_name.toLowerCase().includes(searchQuery.toLowerCase());
+    };
+
+    return (
+      <div className="space-y-1">
+        {parentMenus.filter(filterMenuTree).map(parent => (
+          <div key={parent.id}>
+            <div className="flex items-center group px-2 py-2 rounded hover:bg-blue-50 transition cursor-pointer" onClick={() => toggleMenuExpanded(parent.id)}>
+              <span className="mr-2 text-gray-400 group-hover:text-blue-500 transition">
+                {expandedMenus[parent.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </span>
+              <span className="mr-2 text-blue-600">
+                {getMenuIcon(parent.menu_name, true)}
+              </span>
+              <span className="font-medium text-gray-800 flex-1">{parent.menu_name}</span>
+              {/* Privilege: view & access */}
+              <div className="flex gap-1 ml-2">
+                {['view', 'access'].map(priv => (
+                  <button
+                    key={priv}
+                    onClick={e => { e.stopPropagation(); onPrivilegeChange(parent.id, `can_${priv}`); }}
+                    className={`w-7 h-7 flex items-center justify-center rounded transition text-xs border ${privileges[parent.id]?.[`can_${priv}`] ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'}`}
+                    title={getPrivilegeLabel(priv)}
+                  >
+                    {priv === 'view' ? <Eye size={14} /> : <Lock size={14} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Children */}
+            {(expandedMenus[parent.id] || searchQuery) && getChildMenus(parent.id).filter(filterChild).length > 0 && (
+              <div className="ml-7 border-l border-gray-100 pl-2">
+                {getChildMenus(parent.id).filter(filterChild).map(child => (
+                  <div key={child.id} className="flex items-center group px-2 py-1.5 rounded hover:bg-blue-50 transition cursor-pointer">
+                    <span className="mr-2 text-blue-400">
+                      {getMenuIcon(child.menu_name, true)}
+                    </span>
+                    <span className="text-gray-700 flex-1">{child.menu_name}</span>
+                    <div className="flex gap-1 ml-2">
+                      {['view', 'access', 'create', 'edit', 'delete'].map(priv => (
+                        <button
+                          key={priv}
+                          onClick={e => { e.stopPropagation(); onPrivilegeChange(child.id, `can_${priv}`); }}
+                          className={`w-7 h-7 flex items-center justify-center rounded transition text-xs border ${privileges[child.id]?.[`can_${priv}`] ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'}`}
+                          title={getPrivilegeLabel(priv)}
+                        >
+                          {priv === 'view' && <Eye size={13} />}
+                          {priv === 'access' && <Lock size={13} />}
+                          {priv === 'create' && <PlusCircle size={13} />}
+                          {priv === 'edit' && <Pencil size={13} />}
+                          {priv === 'delete' && <Trash size={13} />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -389,14 +470,13 @@ const RoleManagement = () => {
                     }`}
                   >
                     <Save size={18} className={hasChanges ? 'text-white' : 'text-gray-400'} />
-                    {hasChanges ? 'Save Changes' : 'All Changes Saved'}
+                    {hasChanges ? 'Simpan Perubahan' : 'Semua Tersimpan'}
                   </button>
                 </div>
               </div>
-
-              {/* Search and Filter */}
+              {/* Search & Tree Menu */}
               <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-                <div className="relative">
+                <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="text"
@@ -406,250 +486,19 @@ const RoleManagement = () => {
                     className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => setActiveTab('all')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    Semua Menu
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('parent')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'parent' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    Menu Utama
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('child')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'child' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    Sub Menu
-                  </button>
+                {/* Tree Menu Minimalis */}
+                <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+                  <TreeMenu
+                    menus={menus}
+                    privileges={privileges}
+                    onPrivilegeChange={handlePrivilegeChange}
+                    expandedMenus={expandedMenus}
+                    toggleMenuExpanded={toggleMenuExpanded}
+                    getMenuIcon={getMenuIcon}
+                    getPrivilegeLabel={getPrivilegeLabel}
+                    searchQuery={searchQuery}
+                  />
                 </div>
-              </div>
-              
-              {/* Hierarchical Menu Privileges */}
-              <div className="space-y-4">
-                <AnimatePresence>
-                  {isLoading ? (
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex justify-center items-center p-12"
-                    >
-                      <div className="flex flex-col items-center">
-                        <RefreshCw size={36} className="text-blue-500 animate-spin mb-4" />
-                        <p className="text-gray-600">Memuat data...</p>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <>
-                      {/* Parent Menus */}
-                      {parentMenus
-                        .filter(menu => {
-                          if (searchQuery) return menu.menu_name.toLowerCase().includes(searchQuery.toLowerCase());
-                          if (activeTab === 'child') return false;
-                          return true;
-                        })
-                        .map(parentMenu => (
-                          <motion.div 
-                            key={parentMenu.id} 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2 }}
-                            className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100"
-                          >
-                            <div 
-                              className="px-6 py-4 border-b flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
-                              onClick={() => toggleMenuExpanded(parentMenu.id)}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-                                  {getMenuIcon(parentMenu.menu_name)}
-                                </div>
-                                <h3 className="font-semibold text-gray-800">{parentMenu.menu_name}</h3>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <div className="flex gap-1">
-                                  {['view', 'access'].map(privilege => {
-                                    const isChecked = privileges[parentMenu.id]?.[`can_${privilege}`] || false;
-                                    return (
-                                      <motion.div 
-                                        key={privilege}
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        className={`px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 ${isChecked ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handlePrivilegeChange(parentMenu.id, `can_${privilege}`);
-                                        }}
-                                      >
-                                        {privilege === 'view' ? <Eye size={12} /> : <Lock size={12} />}
-                                        {getPrivilegeLabel(privilege)}
-                                      </motion.div>
-                                    );
-                                  })}
-                                </div>
-                                <button className="text-gray-400">
-                                  {expandedMenus[parentMenu.id] ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                                </button>
-                              </div>
-                            </div>
-                            
-                            {/* Child Menus */}
-                            <AnimatePresence>
-                              {expandedMenus[parentMenu.id] && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                >
-                                  <div className="divide-y divide-gray-100">
-                                    {getChildMenus(parentMenu.id)
-                                      .filter(menu => {
-                                        if (searchQuery) return menu.menu_name.toLowerCase().includes(searchQuery.toLowerCase());
-                                        return true;
-                                      })
-                                      .map(childMenu => (
-                                        <div key={childMenu.id} className="p-4 pl-14 hover:bg-gray-50 transition-colors">
-                                          <div className="flex flex-col space-y-3">
-                                            <div className="flex justify-between items-center">
-                                              <div className="flex items-center gap-2">
-                                                <div className="p-1.5 rounded-md bg-gray-100 text-gray-600">
-                                                  {getMenuIcon(childMenu.menu_name, true)}
-                                                </div>
-                                                <span className="text-sm font-medium text-gray-700">{childMenu.menu_name}</span>
-                                              </div>
-                                              <div className="flex gap-1">
-                                                {['view', 'access'].map(privilege => {
-                                                  const isChecked = privileges[childMenu.id]?.[`can_${privilege}`] || false;
-                                                  return (
-                                                    <motion.button
-                                                      key={privilege}
-                                                      whileHover={{ scale: 1.05 }}
-                                                      whileTap={{ scale: 0.95 }}
-                                                      onClick={() => handlePrivilegeChange(childMenu.id, `can_${privilege}`)}
-                                                      className={`p-1 rounded-md ${isChecked ? 'text-blue-600' : 'text-gray-400'}`}
-                                                    >
-                                                      {privilege === 'view' ? <Eye size={14} /> : <Lock size={14} />}
-                                                    </motion.button>
-                                                  );
-                                                })}
-                                              </div>
-                                            </div>
-                                            
-                                            <div className="grid grid-cols-3 gap-2 ml-7">
-                                              {['create', 'edit', 'delete'].map(privilege => {
-                                                const isChecked = privileges[childMenu.id]?.[`can_${privilege}`] || false;
-                                                const icons = {
-                                                  'create': <PlusCircle size={14} />,
-                                                  'edit': <Pencil size={14} />,
-                                                  'delete': <Trash size={14} />
-                                                };
-                                                return (
-                                                  <motion.div
-                                                    key={privilege}
-                                                    whileHover={{ scale: 1.02 }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    onClick={() => handlePrivilegeChange(childMenu.id, `can_${privilege}`)}
-                                                    className={`px-2 py-1.5 rounded-md text-xs flex items-center gap-1.5 cursor-pointer transition-colors ${isChecked ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-                                                  >
-                                                    {icons[privilege]}
-                                                    {getPrivilegeLabel(privilege)}
-                                                  </motion.div>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </motion.div>
-                        ))}
-                      
-                      {/* Standalone Child Menus (for search results or child tab) */}
-                      {activeTab === 'child' || searchQuery ? (
-                        <div className="mt-4">
-                          {menus
-                            .filter(menu => {
-                              if (!searchQuery && activeTab !== 'child') return false;
-                              if (activeTab === 'child' && !menu.parent_id) return false;
-                              if (searchQuery && !menu.menu_name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-                              // Don't show children that are already shown under their parents when expanded
-                              if (menu.parent_id && expandedMenus[menu.parent_id] && !searchQuery) return false;
-                              return true;
-                            })
-                            .map(menu => (
-                              <motion.div
-                                key={`standalone-${menu.id}`}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="bg-white rounded-lg shadow-sm p-4 mb-2 border border-gray-100"
-                              >
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1.5 rounded-md bg-gray-100 text-gray-600">
-                                      {getMenuIcon(menu.menu_name, true)}
-                                    </div>
-                                    <div>
-                                      <span className="text-sm font-medium text-gray-700">{menu.menu_name}</span>
-                                      {menu.parent_id && (
-                                        <div className="text-xs text-gray-500">
-                                          {menus.find(m => m.id === menu.parent_id)?.menu_name || 'Menu Utama'}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    {['view', 'create', 'edit', 'delete', 'access'].map(privilege => {
-                                      const isChecked = privileges[menu.id]?.[`can_${privilege}`] || false;
-                                      return (
-                                        <motion.button
-                                          key={privilege}
-                                          whileHover={{ scale: 1.05 }}
-                                          whileTap={{ scale: 0.95 }}
-                                          onClick={() => handlePrivilegeChange(menu.id, `can_${privilege}`)}
-                                          className={`p-1.5 rounded-full ${isChecked ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                                          title={getPrivilegeLabel(privilege)}
-                                        >
-                                          {privilege === 'view' && <Eye size={14} />}
-                                          {privilege === 'create' && <PlusCircle size={14} />}
-                                          {privilege === 'edit' && <Pencil size={14} />}
-                                          {privilege === 'delete' && <Trash size={14} />}
-                                          {privilege === 'access' && <Lock size={14} />}
-                                        </motion.button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              </motion.div>
-                            ))}
-                        </div>
-                      ) : null}
-                      
-                      {/* No results message */}
-                      {searchQuery && filteredMenus.length === 0 && (
-                        <motion.div 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="bg-white rounded-xl p-8 text-center border border-gray-100"
-                        >
-                          <Search size={40} className="text-gray-300 mx-auto mb-3" />
-                          <h3 className="text-lg font-medium text-gray-700 mb-1">Tidak ada hasil</h3>
-                          <p className="text-gray-500">Tidak ada menu yang cocok dengan pencarian "{searchQuery}"</p>
-                        </motion.div>
-                      )}
-                    </>
-                  )}
-                </AnimatePresence>
               </div>
             </div>
           ) : (
@@ -696,61 +545,69 @@ const RoleManagement = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
-            <div className="p-6 border-b flex justify-between items-center">
-              <h3 className="text-xl font-semibold text-gray-800">
-                {modalMode === 'create' ? 'Add New Role' : 'Edit Role'}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden animate-fade-in-up">
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowModal(false)}
+              className="absolute top-4 right-4 bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded-full p-2 shadow transition-all z-10"
+              aria-label="Tutup"
+            >
+              <X size={22} />
+            </button>
+            {/* Header */}
+            <div className="px-8 pt-8 pb-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-100 flex items-center gap-3">
+              <Shield className="text-blue-500" size={22} />
+              <h3 className="text-xl font-bold text-gray-800">
+                {modalMode === 'create' ? 'Tambah Role Baru' : 'Edit Role'}
               </h3>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="hover:bg-gray-100 p-2 rounded-full"
-              >
-                <X size={20} />
-              </button>
             </div>
-            
-            <div className="p-6 space-y-5">
+            {/* Form */}
+            <form
+              onSubmit={e => { e.preventDefault(); handleSaveRole(); }}
+              className="px-8 py-7 space-y-6"
+            >
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role Name
+                <label className="block text-xs font-semibold text-gray-500 mb-1 tracking-wide uppercase">
+                  Nama Role
                 </label>
                 <input
                   type="text"
                   value={roleForm.role_name}
                   onChange={e => setRoleForm({ ...roleForm, role_name: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter role name"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-gray-50 text-gray-800 font-medium placeholder-gray-400 transition-all"
+                  placeholder="Masukkan nama role"
+                  autoFocus
+                  required
                 />
               </div>
-              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                <label className="block text-xs font-semibold text-gray-500 mb-1 tracking-wide uppercase">
+                  Deskripsi
                 </label>
                 <textarea
                   value={roleForm.description}
                   onChange={e => setRoleForm({ ...roleForm, description: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32 transition-all duration-200"
-                  placeholder="Enter role description"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-gray-50 text-gray-800 font-medium placeholder-gray-400 transition-all min-h-[90px] resize-none"
+                  placeholder="Deskripsi singkat role (opsional)"
                 />
               </div>
-            </div>
-
-            <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors duration-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveRole}
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200"
-              >
-                {modalMode === 'create' ? 'Create Role' : 'Update Role'}
-              </button>
-            </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-5 py-2.5 rounded-xl font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all shadow-sm"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg hover:from-blue-700 hover:to-blue-600 hover:scale-105 transition-all"
+                >
+                  {modalMode === 'create' ? 'Buat Role' : 'Simpan Perubahan'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

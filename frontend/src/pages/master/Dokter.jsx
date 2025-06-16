@@ -917,7 +917,7 @@ const Dokter = () => {
   };
 
   return (
-    <PageTemplate title="Data Dokter">
+    <PageTemplate>
       <style>
         {`
           @keyframes customFadeInUp {

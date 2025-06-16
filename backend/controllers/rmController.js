@@ -346,6 +346,62 @@ const appointmentController = {
         message: 'Gagal menghapus kunjungan'
       });
     }
+  },
+
+  getAppointmentDetails: async (req, res) => {
+    try {
+      const { appointment_code } = req.params;
+      
+      const [appointment] = await pool.query(`
+        SELECT 
+          a.appointment_code,
+          a.appointment_date,
+          a.appointment_time,
+          a.type,
+          a.status,
+          a.notes,
+          a.poli,
+          p.nama_lengkap as patient_name,
+          p.no_rm as patient_no_rm,
+          p.nik,
+          p.tanggal_lahir,
+          p.jenis_kelamin,
+          p.alamat,
+          p.no_telepon as phone,
+          p.email,
+          d.id as doctor_id,
+          d.name as doctor,
+          v.height,
+          v.weight,
+          v.heart_rate,
+          v.blood_sugar,
+          v.temperature,
+          v.complaint
+        FROM appointments a
+        JOIN pasien p ON a.patient_no_rm = p.no_rm
+        JOIN doctors d ON a.doctor_id = d.id
+        LEFT JOIN visits v ON a.appointment_code = v.appointment_id
+        WHERE a.appointment_code = ?
+      `, [appointment_code]);
+      
+      if (appointment.length === 0) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Appointment tidak ditemukan'
+        });
+      }
+
+      res.json({
+        status: 'success',
+        data: appointment[0]
+      });
+    } catch (error) {
+      console.error('Error fetching appointment details:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Gagal mengambil detail appointment'
+      });
+    }
   }
 };
 

@@ -156,7 +156,7 @@ const Obat = () => {
   const goToPage = (p) => setPage(Math.max(1, Math.min(totalPages, p)));
 
   return (
-    <PageTemplate title="Data Obat">
+    <PageTemplate>
       {/* Gradient Header ala Dokter.jsx */}
       <div className="bg-gradient-to-r from-sky-500 via-indigo-500 to-blue-600 rounded-2xl shadow-lg p-8 mb-8 flex items-center justify-between animate-fade-in hover:shadow-xl transition-all duration-300">
         <div>

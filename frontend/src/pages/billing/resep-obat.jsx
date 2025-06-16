@@ -4,7 +4,7 @@ import axios from 'axios';
 import config from '../../config';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { Calendar, Search, Pill, Clock, User, CheckCircle, XCircle, Plus, Trash2, Save, FileText, AlertTriangle, RefreshCw, Filter, ChevronRight, ChevronDown, Edit, Clipboard, Activity, Stethoscope, Shield, RotateCw, Heart, Loader } from 'lucide-react';
+import { Calendar, Search, Pill, Clock, User, CheckCircle, XCircle, Plus, Trash2, Save, FileText, AlertTriangle, RefreshCw, Filter, ChevronRight, ChevronDown, Edit, Clipboard, Activity, Stethoscope, Shield, RotateCw, Heart, Loader, Loader2 } from 'lucide-react';
 
 const ResepObat = () => {
   const [patients, setPatients] = useState([]);
@@ -60,7 +60,7 @@ const ResepObat = () => {
       if (response.data.success) {
         const patientList = response.data.data || [];
         setPatients(patientList);
-        setFilteredPatients(patientList); // Sinkronkan filteredPatients dengan patients awal
+        setFilteredPatients(patientList);
       } else {
         setPatients([]);
         setFilteredPatients([]);
@@ -332,7 +332,7 @@ const ResepObat = () => {
               {filteredPatients.length} pasien
             </div>
           </div>
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 pt-2 custom-scrollbar">
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 pt-2 custom-scrollbar p-2">
             {loading && 
               <div className="text-center py-12 text-gray-500 flex flex-col items-center">
                 <div className="relative">
@@ -362,81 +362,23 @@ const ResepObat = () => {
             }
             {!loading && filteredPatients.map((patient) => {
               const isWaiting = visitMedications.some(vm => vm.visit_id === patient.visit_id && vm.status === 'pending');
-              const statusText = isWaiting ? 'Waiting' : 'Proceed';
               const selected = selectedPatient?.no_rm === patient.no_rm;
               return (
                 <div
                   key={patient.no_rm}
-                  className={`relative bg-white rounded-2xl p-5 shadow-md border overflow-hidden ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-300'} transition-all duration-300 cursor-pointer group hover:shadow-lg`}
+                  className={`relative rounded-xl bg-white shadow-md border border-gray-100 p-4 mb-4 flex items-center gap-4 transition-all duration-200 hover:shadow-lg hover:border-blue-200 cursor-pointer group ${selected ? 'ring-2 ring-blue-300 border-blue-300' : ''}`}
                   onClick={() => handlePatientSelect(patient)}
                 >
-                  <div className="absolute -right-8 -top-8 w-16 h-16 rounded-full bg-gray-50 group-hover:bg-blue-50 transition-colors duration-300"></div>
-                  <div className="absolute -left-8 -bottom-8 w-16 h-16 rounded-full bg-gray-50 group-hover:bg-blue-50 transition-colors duration-300"></div>
-                  
-                  <div className="flex justify-between items-start mb-3 relative z-10">
-                    <div className={`text-xs px-3 py-1.5 rounded-full flex items-center font-medium ${isWaiting ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                      {isWaiting ? (
-                        <>
-                          <div className="relative mr-1.5">
-                            <Clock size={14} />
-                            <div className="absolute inset-0 animate-ping opacity-30 rounded-full bg-amber-400"></div>
-                          </div>
-                          {statusText}
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle size={14} className="mr-1.5" />
-                          {statusText}
-                        </>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500 bg-gray-100 px-2.5 py-1.5 rounded-full flex items-center font-medium">
-                      <FileText size={12} className="mr-1" />
-                      {patient.visit_id}
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-400 text-white flex items-center justify-center text-2xl font-bold shadow">
+                    {patient.nama_lengkap.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-800 text-lg">{patient.nama_lengkap}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono text-xs">{patient.no_rm}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${isWaiting ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>{isWaiting ? 'Waiting' : 'Proceed'}</span>
                     </div>
                   </div>
-                  
-                  <div className="mt-3 relative z-10">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-medium shadow-md mr-4 text-lg">
-                        {patient.nama_lengkap.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-800 text-lg group-hover:text-blue-700 transition-colors duration-300">
-                          {patient.nama_lengkap}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full mr-2 flex items-center font-medium">
-                            <Clipboard size={12} className="mr-1" />
-                            {patient.no_rm}
-                          </span>
-                          <span className="flex items-center">
-                            <Activity size={12} className="mr-1 text-gray-400" />
-                            24 Tahun
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-600 grid grid-cols-2 gap-3">
-                      <div className="flex items-center">
-                        <Stethoscope size={16} className="mr-2 text-blue-500" />
-                        <span className="text-gray-700 font-medium">{patient.doctor_name || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock size={16} className="mr-2 text-blue-500" />
-                        <span className="text-gray-700 font-medium">10:11</span>
-                      </div>
-                    </div>
-                    
-                    {selected && (
-                      <div className="absolute top-0 right-0 w-0 h-0 border-t-[60px] border-t-blue-500 border-l-[60px] border-l-transparent">
-                        <CheckCircle size={16} className="absolute -top-[48px] right-[8px] text-white" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-transparent to-transparent group-hover:via-blue-500 transition-all duration-300"></div>
                 </div>
               );
             })}
@@ -549,16 +491,12 @@ const ResepObat = () => {
                   Tambah Obat
                 </button>
               </div>
-              <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+              <div className="rounded-xl bg-white shadow-md border border-gray-100 p-6 mb-6">
                 <table className="min-w-full text-sm divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left">
-                        <input 
-                          type="checkbox" 
-                          onChange={handleSelectAll} 
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                        />
+                        <input type="checkbox" onChange={handleSelectAll} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Obat</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosis</th>
@@ -571,145 +509,78 @@ const ResepObat = () => {
                     {visitMedications.map(vm => (
                       <tr key={vm.id} className="hover:bg-blue-50 transition-colors duration-150">
                         <td className="px-4 py-3">
-                          <input 
-                            type="checkbox" 
-                            checked={vm.selected || false} 
-                            onChange={() => handleToggleSelect(vm.id)} 
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                          />
+                          <input type="checkbox" checked={vm.selected || false} onChange={() => handleToggleSelect(vm.id)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-900">{vm.medicine_name}</td>
                         <td className="px-4 py-3 text-gray-700">{vm.dosage}</td>
                         <td className="px-4 py-3 text-gray-700">{vm.frequency}</td>
                         <td className="px-4 py-3 text-gray-700">{vm.duration}</td>
                         <td className="px-4 py-3">
-                          <input
-                            type="number"
-                            value={editQuantities[vm.id] || vm.quantity || 0}
-                            onChange={(e) => handleQuantityChange(vm.id, e.target.value)}
-                            className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full"
-                            min="0"
-                            max={vm.stock || Infinity}
-                          />
+                          <input type="number" value={editQuantities[vm.id] || vm.quantity || 0} onChange={(e) => handleQuantityChange(vm.id, e.target.value)} className="p-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 w-full transition-all" min="0" max={vm.stock || Infinity} />
                         </td>
                       </tr>
-                    ))}  
+                    ))}
                     {newMedications.map(m => (
                       <tr key={m.id} className="hover:bg-blue-50 transition-colors duration-150 bg-blue-50/30">
                         <td className="px-4 py-3">
-                          <input 
-                            type="checkbox" 
-                            checked={m.selected || false} 
-                            onChange={() => handleToggleSelect(m.id)} 
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                          />
+                          <input type="checkbox" checked={m.selected || false} onChange={() => handleToggleSelect(m.id)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
                         </td>
                         <td className="px-4 py-3 relative">
-                          <input
-                            type="text"
-                            value={m.medicine_name || medicineSearches[m.id] || ''}
-                            onChange={(e) => {
-                              handleInputChange(m.id, 'medicine_name', e.target.value);
-                              handleMedicineSearch(m.id, e.target.value);
-                            }}
-                            placeholder="Cari obat (min 2 huruf)..."
-                            className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full"
-                          />
+                          <input type="text" value={m.medicine_name || medicineSearches[m.id] || ''} onChange={(e) => { handleInputChange(m.id, 'medicine_name', e.target.value); handleMedicineSearch(m.id, e.target.value); }} placeholder="Cari obat (min 2 huruf)..." className="p-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 w-full transition-all" />
                           {medicineSearches[m.id] && filteredMedicines[m.id]?.length > 0 && (
-                            <div className="absolute left-[calc(100%+0.5rem)] top-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto w-72">
+                            <div className="absolute left-0 top-12 min-w-[320px] w-auto max-w-[420px] bg-white border border-gray-200 rounded-md shadow-xl z-30 max-h-56 overflow-y-auto animate-fade-in transition-all duration-200">
                               {filteredMedicines[m.id].map(med => (
                                 <div
                                   key={med.id}
-                                  onDoubleClick={() => handleMedicineSelect(m.id, med.id)}
-                                  className="p-3 hover:bg-blue-50 cursor-pointer flex justify-between border-b border-gray-100 last:border-0"
+                                  onClick={() => handleMedicineSelect(m.id, med.id)}
+                                  className="flex justify-between items-center px-5 py-3 cursor-pointer hover:bg-blue-50 transition-all duration-150 group rounded-md mb-1"
                                 >
-                                  <span className="font-medium">{med.name}</span>
-                                  <span className={`px-2 py-0.5 rounded-full text-xs ${med.stock <= 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                    {med.stock <= 0 ? 'Stok habis' : `Stok: ${med.stock}`}
-                                  </span>
+                                  <span className="font-medium text-gray-800 group-hover:text-blue-700 transition-colors text-sm whitespace-nowrap">{med.name}</span>
+                                  <span className={`ml-4 px-2 py-0.5 rounded-full text-xs font-medium shadow-sm border whitespace-nowrap ${med.stock <= 0 ? 'bg-red-50 text-red-500 border-red-200' : 'bg-green-50 text-green-600 border-green-200'}`}>{med.stock <= 0 ? 'Stok habis' : `Stok: ${med.stock}`}</span>
                                 </div>
                               ))}
                             </div>
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <input 
-                            type="text" 
-                            value={m.dosage} 
-                            onChange={(e) => handleInputChange(m.id, 'dosage', e.target.value)} 
-                            className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full" 
-                            placeholder="Dosis"
-                          />
+                          <input type="text" value={m.dosage} onChange={(e) => handleInputChange(m.id, 'dosage', e.target.value)} className="p-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 w-full transition-all" placeholder="Dosis" />
                         </td>
                         <td className="px-4 py-3">
-                          <input 
-                            type="text" 
-                            value={m.frequency} 
-                            onChange={(e) => handleInputChange(m.id, 'frequency', e.target.value)} 
-                            className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full" 
-                            placeholder="Frekuensi"
-                          />
+                          <input type="text" value={m.frequency} onChange={(e) => handleInputChange(m.id, 'frequency', e.target.value)} className="p-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 w-full transition-all" placeholder="Frekuensi" />
                         </td>
                         <td className="px-4 py-3">
-                          <input 
-                            type="number" 
-                            value={m.duration} 
-                            onChange={(e) => handleInputChange(m.id, 'duration', e.target.value)} 
-                            className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full" 
-                            placeholder="Durasi"
-                          />
+                          <input type="number" value={m.duration} onChange={(e) => handleInputChange(m.id, 'duration', e.target.value)} className="p-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 w-full transition-all" placeholder="Durasi" />
                         </td>
                         <td className="px-4 py-3">
-                          <input 
-                            type="number" 
-                            value={m.quantity} 
-                            onChange={(e) => handleInputChange(m.id, 'quantity', e.target.value)} 
-                            className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full" 
-                            min="0" 
-                            placeholder="Jumlah"
-                          />
+                          <input type="number" value={m.quantity} onChange={(e) => handleInputChange(m.id, 'quantity', e.target.value)} className="p-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 w-full transition-all" min="0" placeholder="Jumlah" />
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                <button 
+                  onClick={saveChanges}
+                  className="w-full mt-6 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition flex items-center justify-center text-lg" 
+                  disabled={loading}
+                >
+                  {loading ? (<Loader2 className="animate-spin mr-2" size={22} />) : (<Save size={20} className="mr-2" />)}
+                  Simpan Resep
+                </button>
               </div>
-              
-              <button 
-                onClick={saveChanges} 
-                className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium text-lg flex items-center justify-center transition-colors duration-150" 
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-t-white border-white/30 rounded-full animate-spin mr-2"></div>
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save size={20} className="mr-2" />
-                    Simpan Resep
-                  </>
-                )}
-              </button>
-              
-              {error && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start">
-                  <XCircle size={20} className="mr-2 mt-0.5 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-              
-              {success && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg flex items-start">
-                  <CheckCircle size={20} className="mr-2 mt-0.5 flex-shrink-0" />
-                  <span>{success}</span>
-                </div>
-              )}
             </>
           )}
         </div>
       </div>
+      {success && (
+        <div className="fixed top-6 right-6 z-50 bg-green-50 border border-green-200 text-green-700 rounded-xl shadow-lg px-6 py-3 animate-fade-in flex items-center gap-2">
+          <CheckCircle size={20} /> {success}
+        </div>
+      )}
+      {error && (
+        <div className="fixed top-6 right-6 z-50 bg-red-50 border border-red-200 text-red-700 rounded-xl shadow-lg px-6 py-3 animate-fade-in flex items-center gap-2">
+          <XCircle size={20} /> {error}
+        </div>
+      )}
     </PageTemplate>
   );
 };

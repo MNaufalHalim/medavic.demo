@@ -55,7 +55,11 @@ exports.getVisitMedications = async (req, res) => {
     }
 
     const [visit] = await pool.query(
-      'SELECT v.visit_id, v.patient_id, p.no_rm, p.nama_lengkap FROM visits v JOIN pasien p ON v.patient_id = p.no_rm WHERE v.visit_id = ? LIMIT 1',
+      `SELECT v.visit_id, v.patient_id, p.no_rm, p.nama_lengkap, d.name AS doctor_name
+       FROM visits v
+       JOIN pasien p ON v.patient_id = p.no_rm
+       LEFT JOIN doctors d ON v.doctor_id = d.id
+       WHERE v.visit_id = ? LIMIT 1`,
       [visitId]
     );
     if (!visit.length) {
