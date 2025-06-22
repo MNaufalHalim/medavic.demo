@@ -760,7 +760,7 @@ exports.resetPayment = async (req, res) => {
         await connection.rollback();
         console.error('Error resetting payment:', error);
         res.status(500).json({ success: false, message: 'Terjadi kesalahan di server.' });
-    } finally {
-        connection.release();
-    }
+  } finally {
+    connection.release();
+  }
 };

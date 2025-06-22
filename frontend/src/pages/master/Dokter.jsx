@@ -208,7 +208,7 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing, polyclinics }) => {
               ) : (
                 <div className="p-2 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg shadow-sm">
                   <ShieldAlert size={18} className="text-red-500" />
-                </div>
+              </div>
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 mb-1">Status</p>
@@ -218,7 +218,7 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing, polyclinics }) => {
                     : 'bg-rose-100 text-rose-700'
                 }`}>
                   {doctor.status === 'Active' ? 'Aktif' : 'Tidak Aktif'}
-                </span>
+                  </span>
               </div>
             </div>
           )}

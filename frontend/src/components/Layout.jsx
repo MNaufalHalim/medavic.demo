@@ -6,11 +6,9 @@ import Navbar from './Navbar';
 const Layout = () => {
   return (
     <div className="flex w-screen size-dvh bg-gray-50">
-      <div className="w-64 bg-white border-r border-gray-200">
-        <Sidebar />
-      </div>
+      <Sidebar />
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ml-16">
         <div className="h-16 bg-white border-b border-gray-200">
           <Navbar />
         </div>
