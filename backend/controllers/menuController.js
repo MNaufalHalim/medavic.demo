@@ -234,6 +234,68 @@ const menuController = {
       console.error('Error in deleteMenu:', error);
       res.status(500).json({ status: 'error', message: 'Gagal menghapus menu' });
     }
+  },
+
+  // BATCH UPDATE MENU
+  batchUpdateMenu: async (req, res) => {
+    try {
+      const { menus } = req.body;
+      
+      if (!Array.isArray(menus)) {
+        return res.status(400).json({ 
+          status: 'error', 
+          message: 'Data menu harus berupa array' 
+        });
+      }
+
+      // Mulai transaction
+      const connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      try {
+        for (const menu of menus) {
+          const { id, menu_name, menu_path, icon, parent_id, order_number } = menu;
+          
+          // Validasi ID
+          if (!id || typeof id !== 'string' && typeof id !== 'number') {
+            throw new Error(`Invalid menu ID: ${id}`);
+          }
+
+          // Update menu
+          await connection.query(
+            'UPDATE sys_menu SET menu_name=?, menu_path=?, icon=?, parent_id=?, order_number=? WHERE id=? AND delt_flg="N"',
+            [
+              menu_name || null, 
+              menu_path || null, 
+              icon || null, 
+              parent_id || null, 
+              order_number || null, 
+              id
+            ]
+          );
+        }
+
+        // Commit transaction
+        await connection.commit();
+        connection.release();
+
+        res.json({ 
+          status: 'success', 
+          message: `${menus.length} menu berhasil diupdate` 
+        });
+      } catch (error) {
+        // Rollback jika ada error
+        await connection.rollback();
+        connection.release();
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error in batchUpdateMenu:', error);
+      res.status(500).json({ 
+        status: 'error', 
+        message: 'Gagal update menu batch: ' + error.message 
+      });
+    }
   }
 };
 

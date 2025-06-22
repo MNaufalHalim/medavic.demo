@@ -301,12 +301,19 @@ const MenuManagement = () => {
 
   // Add sub-menu
   const handleAddSub = (parentId) => {
-    const newId = 'new-' + Math.random().toString(36).substr(2, 9);
-    setLocalMenus(menus => [
-      ...menus,
-      { id: newId, menu_name: '', menu_path: '', icon: '', parent_id: parentId, order_number: menus.length + 1 }
-    ]);
+    const newId = 'new-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const newMenu = {
+      id: newId,
+      menu_name: '',
+      menu_path: '',
+      icon: '',
+      parent_id: parentId,
+      order_number: localMenus.length + 1
+    };
+    
+    setLocalMenus(menus => [...menus, newMenu]);
     setHasChanges(true);
+    
     // Auto expand parent when adding sub-menu
     if (!expandedMenus.includes(parentId)) {
       setExpandedMenus(prev => [...prev, parentId]);
@@ -322,14 +329,61 @@ const MenuManagement = () => {
   // Save all changes
   const handleSaveAll = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
-      await axios.put(`${config.apiUrl}/menus/batch`, { menus: localMenus }, {
+      
+      // Filter dan validasi data sebelum dikirim
+      const validMenus = localMenus.filter(menu => {
+        // Pastikan ID valid (bukan string kosong atau null)
+        if (!menu.id || menu.id === '') {
+          console.warn('Menu dengan ID invalid:', menu);
+          return false;
+        }
+        
+        // Pastikan ID bukan 'batch' (yang bisa menyebabkan error)
+        if (menu.id === 'batch') {
+          console.warn('Menu dengan ID "batch" tidak valid:', menu);
+          return false;
+        }
+        
+        return true;
+      }).map(menu => ({
+        ...menu,
+        // Pastikan nilai yang dikirim valid
+        menu_name: menu.menu_name || '',
+        menu_path: menu.menu_path || '',
+        icon: menu.icon || '',
+        parent_id: menu.parent_id || null,
+        order_number: menu.order_number || 0
+      }));
+
+      if (validMenus.length === 0) {
+        setNotif({ show: true, type: 'error', message: 'Tidak ada data menu yang valid untuk disimpan' });
+        return;
+      }
+
+      console.log('Sending menus to server:', validMenus);
+      
+      const response = await axios.put(`${config.apiUrl}/menus/batch`, { 
+        menus: validMenus 
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setNotif({ show: true, type: 'success', message: 'Perubahan menu berhasil disimpan' });
-      fetchMenus();
+
+      if (response.data.status === 'success') {
+        setNotif({ show: true, type: 'success', message: response.data.message || 'Perubahan menu berhasil disimpan' });
+        setHasChanges(false);
+        // Refresh data dari server
+        await fetchMenus();
+      } else {
+        setNotif({ show: true, type: 'error', message: response.data.message || 'Gagal menyimpan perubahan menu' });
+      }
     } catch (err) {
-      setNotif({ show: true, type: 'error', message: 'Gagal menyimpan perubahan menu' });
+      console.error('Error saving menus:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Gagal menyimpan perubahan menu';
+      setNotif({ show: true, type: 'error', message: errorMessage });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -369,10 +423,19 @@ const MenuManagement = () => {
           </div>
           <button
             onClick={handleSaveAll}
-            disabled={!hasChanges}
-            className={`px-8 py-4 rounded-2xl font-bold text-white shadow-lg transition-all duration-200 ${hasChanges ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105' : 'bg-gray-400 cursor-not-allowed'}`}
+            disabled={!hasChanges || loading}
+            className={`px-8 py-4 rounded-2xl font-bold text-white shadow-lg transition-all duration-200 flex items-center gap-2 ${hasChanges && !loading ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105' : 'bg-gray-400 cursor-not-allowed'}`}
           >
-            {hasChanges ? '💾 Simpan Perubahan' : '✓ Tersimpan'}
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin h-5 w-5" />
+                Menyimpan...
+              </>
+            ) : hasChanges ? (
+              '💾 Simpan Perubahan'
+            ) : (
+              '✓ Tersimpan'
+            )}
           </button>
         </div>
       </div>

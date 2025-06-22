@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import config from "../config";
+import logo from "../assets/logo.png";
 import {
   Home,
   Database,
@@ -397,8 +398,8 @@ const Sidebar = ({ collapsed, onLogout }) => {
       <div className="fixed left-0 h-screen w-16 bg-white border-r border-gray-200 flex flex-col z-[9]">
         {/* Logo */}
         <div className="flex items-center justify-center p-4 bg-white border-b border-gray-200">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">M</span>
+          <div className="w-8 h-8 flex items-center justify-center">
+            <img src={logo} alt="logo" />
           </div>
         </div>
 

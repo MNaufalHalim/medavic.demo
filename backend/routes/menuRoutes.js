@@ -9,6 +9,8 @@ router.get('/', authMiddleware, menuController.getAllMenus);
 router.get('/user', authMiddleware, menuController.getUserMenus);
 // CRUD Menu
 router.post('/', authMiddleware, menuController.createMenu);
+// Batch update menu (harus sebelum /:id)
+router.put('/batch', authMiddleware, menuController.batchUpdateMenu);
 router.put('/:id', authMiddleware, menuController.updateMenu);
 router.delete('/:id', authMiddleware, menuController.deleteMenu);
 
