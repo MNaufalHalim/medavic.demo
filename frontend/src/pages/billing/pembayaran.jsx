@@ -660,7 +660,7 @@ function Pembayaran() {
               </div>
             )}
             
-            {/* Indikator untuk tablet ketika tidak ada detail yang dipilih
+            {/*test Indikator untuk tablet ketika tidak ada detail yang dipilih
             {!showDetail && selectedInvoice && (
               <div className="mt-4 xl:hidden animate-fade-in">
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
