@@ -10,7 +10,7 @@ import {
 const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 // Reusable DoctorInfoForm Component
-const DoctorInfoForm = ({ doctor, onChange, isEditing, polyclinics }) => {
+const DoctorInfoForm = ({ doctor, onChange, isEditing, polyclinics, doctors = [] }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -88,6 +88,104 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing, polyclinics }) => {
                   <p className="text-sm text-gray-800 break-words">{doctor.specialization}</p>
                 ) : (
                   <p className="text-sm text-gray-400 italic">Belum ada spesialisasi</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Nomor SIP/STR */}
+        <div className="relative group">
+          {isEditing ? (
+            <>
+              <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-sky-600 transition-colors duration-200">
+                Nomor SIP/STR <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <Award size={14} className="text-white" />
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={doctor.license_no ?? ''}
+                  onChange={(e) => onChange('license_no', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 bg-white border rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300 ${
+                    doctor.license_no && doctor.license_no.length > 0 && (
+                      doctor.license_no.length < 6 || 
+                      doctor.license_no.length > 20 || 
+                      !/^[A-Za-z0-9\-\.\/]+$/.test(doctor.license_no) ||
+                      (() => {
+                        const existingDoctor = doctors.find(doc => 
+                          doc.license_no === doctor.license_no && 
+                          doc.id !== doctor.id
+                        );
+                        return !!existingDoctor;
+                      })()
+                    )
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                      : doctor.license_no && doctor.license_no.length >= 6 && doctor.license_no.length <= 20 && /^[A-Za-z0-9\-\.\/]+$/.test(doctor.license_no)
+                      ? 'border-green-300 focus:ring-green-500 focus:border-green-500'
+                      : 'border-gray-200'
+                  }`}
+                  placeholder="Contoh: SIP.123456.789.2023"
+                  required
+                />
+                {doctor.license_no && doctor.license_no.length >= 6 && doctor.license_no.length <= 20 && /^[A-Za-z0-9\-\.\/]+$/.test(doctor.license_no) && (() => {
+                  const existingDoctor = doctors.find(doc => 
+                    doc.license_no === doctor.license_no && 
+                    doc.id !== doctor.id
+                  );
+                  return !existingDoctor;
+                })() && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <CheckCircle size={16} className="text-green-500" />
+                  </div>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Masukkan nomor SIP (Surat Izin Praktik) atau STR (Surat Tanda Registrasi) dokter. Format: 6-20 karakter, boleh berisi huruf, angka, titik, dan garis miring.
+              </p>
+              {doctor.license_no && doctor.license_no.length > 0 && (doctor.license_no.length < 6 || doctor.license_no.length > 20) && (
+                <p className="mt-1 text-xs text-red-500">
+                  Nomor SIP/STR harus antara 6-20 karakter.
+                </p>
+              )}
+              {doctor.license_no && doctor.license_no.length > 0 && !/^[A-Za-z0-9\-\.\/]+$/.test(doctor.license_no) && (
+                <p className="mt-1 text-xs text-red-500">
+                  Nomor SIP/STR hanya boleh berisi huruf, angka, tanda hubung (-), titik (.), dan garis miring (/).
+                </p>
+              )}
+              {doctor.license_no && doctor.license_no.length >= 6 && doctor.license_no.length <= 20 && /^[A-Za-z0-9\-\.\/]+$/.test(doctor.license_no) && (() => {
+                const existingDoctor = doctors.find(doc => 
+                  doc.license_no === doctor.license_no && 
+                  doc.id !== doctor.id
+                );
+                return existingDoctor ? (
+                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                    <XCircle size={12} />
+                    Nomor SIP/STR sudah terdaftar untuk dokter lain
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-green-500 flex items-center gap-1">
+                    <CheckCircle size={12} />
+                    Format nomor SIP/STR valid
+                  </p>
+                );
+              })()}
+            </>
+          ) : (
+            <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
+              <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+                <Award size={18} className="text-blue-500" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-gray-500 mb-1">Nomor SIP/STR</p>
+                {doctor.license_no ? (
+                  <p className="text-sm text-gray-800 break-words">{doctor.license_no}</p>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Belum ada nomor SIP/STR</p>
                 )}
               </div>
             </div>
@@ -315,6 +413,13 @@ const DoctorSchedule = ({ scheduleList, isEditing, onScheduleListChange }) => {
     handleSlotChange(temp_id, field, `${value}:00`);
   };
 
+  const isSlotInvalid = (slot) => {
+    if (!slot.start_time || !slot.end_time) return false;
+    const start = parseInt(slot.start_time.split(':')[0]);
+    const end = parseInt(slot.end_time.split(':')[0]);
+    return start >= end;
+  };
+
   if (!isEditing && scheduleList.length === 0) {
     return (
       <section className="mt-6">
@@ -333,13 +438,13 @@ const DoctorSchedule = ({ scheduleList, isEditing, onScheduleListChange }) => {
           <p className="text-gray-500 max-w-md mx-auto mb-6">
             Belum ada jadwal praktik yang diatur. Silakan edit untuk menambahkan jadwal praktik dokter.
           </p>
-          <button
+          {/* <button
             onClick={() => setStateField('isEditing', true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium rounded-lg border border-sky-200 transition-all duration-300 hover:scale-105"
           >
             <PlusCircle size={18} />
             Tambah Jadwal
-          </button>
+          </button> */}
         </div>
       </section>
     );
@@ -362,6 +467,7 @@ const DoctorSchedule = ({ scheduleList, isEditing, onScheduleListChange }) => {
         {scheduleList.map((slot) => {
           const DayIcon = dayIcons[slot.day_of_week];
           const colors = dayColors[slot.day_of_week];
+          const slotInvalid = isSlotInvalid(slot);
           
           return (
             <div 
@@ -461,7 +567,13 @@ const DoctorSchedule = ({ scheduleList, isEditing, onScheduleListChange }) => {
                       </div>
                     </div>
                   </div>
-                  {slot.start_time && slot.end_time && (
+                  {slotInvalid && (
+                    <div className="mt-2 text-xs text-red-500 flex items-center gap-1">
+                      <AlertTriangle size={14} />
+                      Jam mulai harus lebih awal dari jam selesai.
+                    </div>
+                  )}
+                  {slot.start_time && slot.end_time && !slotInvalid && (
                     <div className="mt-3 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm flex items-center gap-2 animate-fade-in">
                       <Clock size={16} className="text-sky-500 transition-transform duration-300 group-hover:scale-110" />
                       <span>Durasi: {calculateDuration(slot.start_time, slot.end_time)}</span>
@@ -664,10 +776,34 @@ const Dokter = () => {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!editDoctor?.name || !editDoctor?.specialization) {
-      setStateField('error', 'Nama dan spesialisasi dokter wajib diisi.');
+    if (!editDoctor?.name || !editDoctor?.specialization || !editDoctor?.license_no) {
+      setStateField('error', 'Nama, spesialisasi, dan nomor SIP/STR dokter wajib diisi.');
       return;
     }
+
+    // Validasi format nomor SIP/STR (minimal 6 karakter, maksimal 20 karakter)
+    if (editDoctor.license_no.length < 6 || editDoctor.license_no.length > 20) {
+      setStateField('error', 'Nomor SIP/STR harus antara 6-20 karakter.');
+      return;
+    }
+
+    // Validasi nomor SIP/STR hanya boleh berisi huruf, angka, dan tanda hubung
+    const licenseNoRegex = /^[A-Za-z0-9\-\.\/]+$/;
+    if (!licenseNoRegex.test(editDoctor.license_no)) {
+      setStateField('error', 'Nomor SIP/STR hanya boleh berisi huruf, angka, tanda hubung (-), titik (.), dan garis miring (/).');
+      return;
+    }
+
+    // Validasi duplikasi nomor SIP/STR
+    const existingDoctor = doctors.find(doc => 
+      doc.license_no === editDoctor.license_no && 
+      doc.id !== editDoctor.id
+    );
+    if (existingDoctor) {
+      setStateField('error', 'Nomor SIP/STR sudah terdaftar untuk dokter lain.');
+      return;
+    }
+
     setState((prev) => ({ ...prev, loadingSave: true, error: '', success: '' }));
 
     const finalSchedules = scheduleList
@@ -739,16 +875,36 @@ const Dokter = () => {
         if (response.data.status === 'success') {
           const savedDoctorData = response.data.data;
           await fetchDoctors();
+          
+          // Auto-select the newly created doctor
+          const newDoctor = {
+            id: savedDoctorData.id,
+            name: editDoctor.name,
+            specialization: editDoctor.specialization,
+            license_no: editDoctor.license_no,
+            phone_number: editDoctor.phone_number,
+            email: editDoctor.email,
+            status: editDoctor.status,
+            poli: editDoctor.poli,
+            poli_name: polyclinics.find(p => p.id === editDoctor.poli)?.name || 'N/A'
+          };
+          
           setState(prev => ({
             ...prev,
             success: 'Dokter baru berhasil ditambahkan!',
             error: '',
-            selectedDoctor: savedDoctorData,
-            editDoctor: { ...savedDoctorData },
+            selectedDoctor: newDoctor,
+            editDoctor: { ...newDoctor },
             isEditing: false,
             loadingSave: false,
+            showNotif: true,
+            notifType: 'success',
+            notifMessage: 'Dokter baru berhasil ditambahkan!',
           }));
+          
+          // Fetch schedules for the new doctor
           await fetchSchedules(savedDoctorData.id);
+          setTimeout(() => setStateField('showNotif', false), 4000);
         } else {
           throw new Error(response.data.message || 'Gagal menyimpan data dokter.');
         }
@@ -842,6 +998,16 @@ const Dokter = () => {
       if (upcoming?.day_of_week && upcoming.start_time) {
         return `${upcoming.day_of_week.substring(0, 3)}, ${upcoming.start_time.substring(0, 5)}`;
       }
+    }
+    return 'Belum ada jadwal';
+  };
+
+  const getDoctorScheduleStatus = (doctorId) => {
+    // Selalu cek dari data dokter yang sudah ada schedule
+    const doctor = doctors.find(d => d.id === doctorId);
+    if (doctor && doctor.schedule && Array.isArray(doctor.schedule)) {
+      const hasAnySchedule = doctor.schedule.some(s => s.start_time && s.end_time);
+      return hasAnySchedule ? null : 'Belum ada jadwal';
     }
     return 'Belum ada jadwal';
   };
@@ -953,10 +1119,11 @@ const Dokter = () => {
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
               <div className="p-6 md:p-8">
             <DoctorInfoForm
-              doctor={doctorToDisplay || { name: '', sip: '', str: '', specialization: '', phone: '', email: '', address: '', is_active: true }}
+              doctor={doctorToDisplay || { name: '', license_no: '', specialization: '', phone_number: '', email: '', status: 'Active', poli: '', is_active: true }}
               isEditing={isEditing}
               onChange={handleInputChange}
               polyclinics={polyclinics}
+              doctors={doctors}
             />
               </div>
             </div>
@@ -1038,13 +1205,12 @@ const Dokter = () => {
               selectedDoctor: null,
               editDoctor: {
                 name: '',
-                sip: '',
-                str: '',
+                license_no: '',
                 specialization: '',
-                phone: '',
+                phone_number: '',
                 email: '',
-                address: '',
-                is_active: true,
+                status: 'Active',
+                poli: '',
               },
               scheduleList: [],
               removedScheduleIds: [],
@@ -1063,32 +1229,32 @@ const Dokter = () => {
         </button>
       </div>
 
-      <div className="flex flex-row gap-6 min-h-[calc(100vh-180px)]">
-        {/* Doctor List Sidebar */}
-        <div className="w-1/3 bg-white/80 rounded-2xl shadow-lg border border-gray-200 flex flex-col max-h-[calc(100vh-180px)] animate-slide-in">
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-xl font-bold text-sky-700 flex items-center gap-2">
-              <Users size={22} className="text-sky-500" />
+      <div className="flex flex-row gap-4 lg:gap-6 min-h-[calc(100vh-180px)]">
+        {/* Doctor List Sidebar - More Compact for Tablet */}
+        <div className="w-2/5 lg:w-1/3 bg-white/80 rounded-2xl shadow-lg border border-gray-200 flex flex-col max-h-[calc(100vh-180px)] animate-slide-in">
+          <div className="p-4 lg:p-6 border-b border-gray-100">
+            <h3 className="text-lg lg:text-xl font-bold text-sky-700 flex items-center gap-2">
+              <Users size={20} className="text-sky-500" />
               Daftar Dokter
             </h3>
-            <div className="relative mt-4">
+            <div className="relative mt-3 lg:mt-4">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={18} className="text-gray-400" />
+                <Search size={16} className="text-gray-400" />
               </div>
               <input
                 type="text"
-                placeholder="Cari berdasarkan nama, spesialisasi..."
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors duration-200 bg-gray-50 hover:bg-gray-100 focus:bg-white"
+                placeholder="Cari dokter..."
+                className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 text-sm transition-colors duration-200 bg-gray-50 hover:bg-gray-100"
                 value={doctorSearchTerm}
                 onChange={(e) => setStateField('doctorSearchTerm', e.target.value)}
                 aria-label="Cari dokter"
               />
             </div>
-            <div className="flex space-x-2 mt-4 bg-gray-100 p-1 rounded-lg">
+            <div className="flex space-x-1 lg:space-x-2 mt-3 lg:mt-4 bg-gray-100 p-1 rounded-lg">
               {['all', 'active', 'inactive'].map((f) => (
                 <button
                   key={f}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center ${
+                  className={`flex-1 py-1.5 lg:py-2 px-2 lg:px-3 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 flex items-center justify-center ${
                     filter === f
                       ? `bg-white shadow-md ${
                           f === 'all' ? 'text-blue-600' : f === 'active' ? 'text-green-600' : 'text-red-600'
@@ -1098,12 +1264,12 @@ const Dokter = () => {
                   onClick={() => setStateField('filter', f)}
                   aria-label={`Filter dokter ${f === 'all' ? 'semua' : f === 'active' ? 'aktif' : 'non-aktif'}`}
                 >
-                  {f === 'all' && <Filter size={16} className="mr-1.5" />}
-                  {f === 'active' && <CheckCircle size={16} className="mr-1.5" />}
-                  {f === 'inactive' && <XCircle size={16} className="mr-1.5" />}
-                  {f === 'all' ? 'Semua' : f === 'active' ? 'Aktif' : 'Non-Aktif'}
+                  {f === 'all' && <Filter size={14} className="mr-1" />}
+                  {f === 'active' && <CheckCircle size={14} className="mr-1" />}
+                  {f === 'inactive' && <XCircle size={14} className="mr-1" />}
+                  <span className="hidden sm:inline">{f === 'all' ? 'Semua' : f === 'active' ? 'Aktif' : 'Non-Aktif'}</span>
                   <span
-                    className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                    className={`ml-1 text-xs px-1 py-0.5 rounded-full ${
                       f === 'all' ? 'bg-blue-100 text-blue-800' : f === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}
                   >
@@ -1114,24 +1280,24 @@ const Dokter = () => {
             </div>
           </div>
 
-          <div className="overflow-y-auto flex-grow max-h-[calc(100vh-300px)] p-2">
+          <div className="overflow-y-auto flex-grow max-h-[calc(100vh-280px)] p-2">
             {loadingFetch ? (
-              <div className="flex flex-col items-center justify-center text-center py-10 text-gray-500">
+              <div className="flex flex-col items-center justify-center text-center py-8 text-gray-500">
                 <div className="relative">
-                  <div className="w-12 h-12 border-4 border-t-white border-white/30 rounded-full animate-spin"></div>
+                  <div className="w-10 h-10 border-4 border-t-white border-white/30 rounded-full animate-spin"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Users size={20} className="text-blue-600" />
+                    <Users size={16} className="text-blue-600" />
                   </div>
                 </div>
-                <span className="mt-4 text-sm font-medium text-gray-600">Memuat daftar dokter...</span>
+                <span className="mt-3 text-sm font-medium text-gray-600">Memuat daftar dokter...</span>
               </div>
             ) : filteredDoctors().length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center py-10 px-4">
-                <Users size={48} className="text-gray-400 mb-4" />
-                <h4 className="text-lg font-semibold text-gray-700 mb-1">
+              <div className="flex flex-col items-center justify-center text-center py-8 px-4">
+                <Users size={40} className="text-gray-400 mb-3" />
+                <h4 className="text-base lg:text-lg font-semibold text-gray-700 mb-1">
                   {filter === 'all' ? 'Belum Ada Dokter' : filter === 'active' ? 'Tidak Ada Dokter Aktif' : 'Tidak Ada Dokter Non-Aktif'}
                 </h4>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs lg:text-sm text-gray-500">
                   {filter === 'all'
                     ? 'Saat ini belum ada data dokter di sistem.'
                     : `Tidak ada dokter yang cocok dengan filter "${filter === 'active' ? 'Aktif' : 'Non-Aktif'}" saat ini.`}
@@ -1139,7 +1305,7 @@ const Dokter = () => {
                 {filter !== 'all' && (
                   <button
                     onClick={() => setStateField('filter', 'all')}
-                    className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-150"
+                    className="mt-3 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-150"
                     aria-label="Lihat semua dokter"
                   >
                     Lihat Semua Dokter
@@ -1150,7 +1316,7 @@ const Dokter = () => {
               filteredDoctors().map((doc, index) => (
                 <div
                   key={doc.id}
-                  className={`animate-custom-fade-in-up cursor-pointer transition-all duration-300 ease-out rounded-lg mx-2 mb-2 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-1 px-4 py-3.5 border-l-4 ${
+                  className={`animate-custom-fade-in-up cursor-pointer transition-all duration-300 ease-out rounded-lg mx-1 mb-2 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-1 px-3 py-2.5 border-l-4 ${
                     selectedDoctor?.id === doc.id 
                       ? 'bg-gradient-to-r from-sky-50 to-white border-sky-500 shadow-lg transform scale-[1.02]' 
                       : 'bg-white hover:bg-gray-50 border-transparent hover:border-sky-300 hover:shadow-md'
@@ -1163,9 +1329,9 @@ const Dokter = () => {
                   aria-label={`Pilih dokter ${doc.name}`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <div
-                        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-md transition-transform duration-300 hover:scale-110 ${
+                        className={`flex-shrink-0 w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-white text-xs lg:text-sm font-medium shadow-md transition-transform duration-300 hover:scale-110 ${
                           doc.status === 'Active' 
                             ? 'bg-gradient-to-br from-sky-500 to-indigo-600' 
                             : 'bg-gradient-to-br from-slate-400 to-slate-600'
@@ -1173,31 +1339,31 @@ const Dokter = () => {
                       >
                         {doc.name.charAt(0).toUpperCase()}
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className={`text-sm font-semibold truncate transition-colors duration-300 ${
                           selectedDoctor?.id === doc.id ? 'text-sky-800 font-bold' : 'text-gray-700 hover:text-sky-700'
                         }`}>
                           {doc.name}
                         </div>
-                        <div className={`flex items-center text-xs mt-1 transition-colors duration-300 ${
+                        <div className={`flex items-center text-xs mt-0.5 transition-colors duration-300 ${
                           selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-500 hover:text-gray-700'
                         }`}>
-                          <Shield size={16} className={`mr-1.5 shrink-0 transition-colors duration-300 ${
+                          <Shield size={14} className={`mr-1 shrink-0 transition-colors duration-300 ${
                             doc.status === 'Active' ? 'text-emerald-500' : 'text-rose-500'
                           }`} />
                           <span className="truncate">{doc.specialization || 'N/A'}</span>
                         </div>
-                        <div className={`flex items-center text-xs mt-1 text-gray-400 ${
+                        <div className={`flex items-center text-xs mt-0.5 text-gray-400 ${
                           selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-500 hover:text-gray-700'
                         }`}>
-                          <Building2 size={14} className="mr-1" />
-                          <span>{doc.poli_name || 'N/A'}</span>
+                          <Award size={12} className="mr-1" />
+                          <span className="truncate">{doc.license_no || 'N/A'}</span>
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-end flex-shrink-0 ml-2">
                       <div
-                        className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all duration-300 ${
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium transition-all duration-300 ${
                           doc.status === 'Active' 
                             ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
                             : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
@@ -1205,14 +1371,16 @@ const Dokter = () => {
                       >
                         {doc.status === 'Active' ? 'Aktif' : 'Non-Aktif'}
                       </div>
-                      <div className={`flex items-center text-xs mt-2 transition-colors duration-300 ${
-                        selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-500 hover:text-gray-700'
-                      }`}>
-                        <Clock size={16} className={`mr-1.5 transition-colors duration-300 ${
-                          selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-400 group-hover:text-gray-600'
-                        }`} />
-                        {getNextSchedule(doc.id)}
-                      </div>
+                      {getDoctorScheduleStatus(doc.id) && (
+                        <div className={`flex items-center text-xs mt-1.5 transition-colors duration-300 ${
+                          selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-500 hover:text-gray-700'
+                        }`}>
+                          <Clock size={14} className={`mr-1 transition-colors duration-300 ${
+                            selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-400 group-hover:text-gray-600'
+                          }`} />
+                          <span className="text-xs">{getDoctorScheduleStatus(doc.id)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1222,7 +1390,7 @@ const Dokter = () => {
         </div>
 
         {/* Doctor Details/Form Area */}
-        <div className="w-2/3 bg-white/90 rounded-2xl shadow-lg border border-gray-200 flex flex-col max-h-[calc(100vh-180px)] animate-fade-in">
+        <div className="w-3/5 lg:w-2/3 bg-white/90 rounded-2xl shadow-lg border border-gray-200 flex flex-col max-h-[calc(100vh-180px)] animate-fade-in">
           {editDoctor && (isEditing || selectedDoctor) ? (
             renderDoctorDetailsOrForm()
           ) : (
@@ -1239,13 +1407,12 @@ const Dokter = () => {
                     selectedDoctor: null,
                     editDoctor: {
                       name: '',
-                      sip: '',
-                      str: '',
+                      license_no: '',
                       specialization: '',
-                      phone: '',
+                      phone_number: '',
                       email: '',
-                      address: '',
-                      is_active: true,
+                      status: 'Active',
+                      poli: '',
                     },
                     scheduleList: [],
                     removedScheduleIds: [],

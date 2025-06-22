@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { format, addDays, startOfToday } from "date-fns";
 import { id, enUS } from "date-fns/locale";
 import axios from "axios";
@@ -298,6 +298,10 @@ const RawatJalan = () => {
     notes: "",
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationType, setNotificationType] = useState("success");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const dateInputRef = useRef(null);
 
   const handlePreviousWeek = () => {
     const newStart = addDays(dateRange.start, -7);
@@ -1055,7 +1059,7 @@ const RawatJalan = () => {
 
   const highlightMatch = (text, search) => {
     if (!text) return "";
-    if (!search || search.length < 3) return text;
+    if (!search || search.length < 2) return text;
 
     const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`(${escapedSearch})`, "gi");
@@ -1067,7 +1071,7 @@ const RawatJalan = () => {
           .filter((part) => part)
           .map((part, i) =>
             regex.test(part) ? (
-              <span key={i} className="bg-yellow-200">
+              <span key={i} className="bg-yellow-200 font-semibold">
                 {part}
               </span>
             ) : (
@@ -1323,10 +1327,6 @@ const RawatJalan = () => {
     }
   };
 
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationType, setNotificationType] = useState("success");
-  const [notificationMessage, setNotificationMessage] = useState("");
-
   const showSuccessNotification = (message) => {
     setNotificationType("success");
     setNotificationMessage(message);
@@ -1432,6 +1432,50 @@ const RawatJalan = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDoctorSearch]);
+
+  // Fungsi untuk membuka date picker
+  const openDatePicker = () => {
+    console.log('openDatePicker called');
+    console.log('dateInputRef.current:', dateInputRef.current);
+    console.log('selectedSlot:', selectedSlot);
+    
+    if (dateInputRef.current && !selectedSlot) {
+      console.log('Input found and slot not selected');
+      
+      // Coba focus dulu, lalu click
+      try {
+        console.log('Focusing input...');
+        dateInputRef.current.focus();
+        
+        // Tunggu sebentar lalu coba showPicker atau click
+        setTimeout(() => {
+          if (typeof dateInputRef.current.showPicker === 'function') {
+            try {
+              console.log('Trying showPicker...');
+              dateInputRef.current.showPicker();
+            } catch (error) {
+              console.log('showPicker failed, trying click');
+              dateInputRef.current.click();
+            }
+          } else {
+            console.log('showPicker not supported, using click');
+            dateInputRef.current.click();
+          }
+        }, 100);
+      } catch (error) {
+        console.log('Error focusing input:', error);
+      }
+    } else {
+      console.log('Date input not found or slot selected');
+    }
+  };
+
+  // Effect untuk memastikan input date bisa diakses
+  useEffect(() => {
+    if (dateInputRef.current) {
+      console.log('Date input ref is ready:', dateInputRef.current);
+    }
+  }, [dateInputRef.current]);
 
   return (
     <PageTemplate>
@@ -1709,7 +1753,7 @@ const RawatJalan = () => {
                         </button>
 
                         {showDoctorModal && selectedSection === sectionIdx && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-gray-100 shadow-xl z-50 max-h-[300px] overflow-hidden max-w-[280px]">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-gray-100 shadow-xl z-50 max-h-[300px] overflow-hidden min-w-[320px] max-w-[400px] sm:min-w-[350px] sm:max-w-[450px] md:min-w-[380px] md:max-w-[500px] animate-in slide-in-from-top-2 duration-200 backdrop-blur-sm">
                             <div className="p-2 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                               <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
@@ -1723,12 +1767,27 @@ const RawatJalan = () => {
                                   onChange={(e) =>
                                     setDoctorSearchTerm(e.target.value)
                                   }
-                                  placeholder="Cari dokter..."
+                                  placeholder="Cari dokter berdasarkan nama atau poliklinik..."
                                   className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 shadow-sm text-sm"
                                 />
                               </div>
+                              <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+                                <Stethoscope size={10} />
+                                <span>
+                                  {(() => {
+                                    const availableDoctorsForSection = getAvailableDoctors(selectedSection);
+                                    const filteredCount = doctorSearchTerm 
+                                      ? availableDoctorsForSection.filter(d => 
+                                          d.name.toLowerCase().includes(doctorSearchTerm.toLowerCase()) ||
+                                          (d.poli_name && d.poli_name.toLowerCase().includes(doctorSearchTerm.toLowerCase()))
+                                        ).length
+                                      : availableDoctorsForSection.length;
+                                    return `${filteredCount} dokter tersedia`;
+                                  })()}
+                                </span>
+                              </div>
                             </div>
-                            <div className="overflow-y-auto max-h-[200px] doctor-list-scrollable">
+                            <div className="overflow-y-auto max-h-[200px] doctor-list-scrollable custom-scrollbar">
                               {(() => {
                                 const availableDoctorsForSection =
                                   getAvailableDoctors(selectedSection);
@@ -1742,7 +1801,12 @@ const RawatJalan = () => {
                                         .toLowerCase()
                                         .includes(
                                           doctorSearchTerm.toLowerCase()
-                                        )
+                                        ) ||
+                                      (d.poli_name && d.poli_name
+                                        .toLowerCase()
+                                        .includes(
+                                          doctorSearchTerm.toLowerCase()
+                                        ))
                                     );
                                 }
 
@@ -1797,7 +1861,7 @@ const RawatJalan = () => {
                                 }
 
                                 return (
-                                  <div className="p-1 grid gap-1">
+                                  <div className="p-2 grid gap-1.5">
                                     {doctorsToDisplay.map((doc) => {
                                       const status = getDoctorDetailedStatus(
                                         doc,
@@ -1818,30 +1882,28 @@ const RawatJalan = () => {
                                             setShowDoctorModal(false);
                                             setDoctorSearchTerm("");
                                           }}
-                                          className="flex items-center justify-between p-2 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer rounded-lg transition-colors duration-150 ease-in-out border border-transparent hover:border-blue-100"
+                                          className="flex items-center justify-between p-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer rounded-lg transition-colors duration-150 ease-in-out border border-transparent hover:border-blue-100"
                                         >
-                                          <div className="flex-grow pr-2 min-w-0">
-                                            <div className="flex items-start gap-2">
-                                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-medium text-sm shrink-0 shadow-sm">
+                                          <div className="flex-grow pr-3 min-w-0">
+                                            <div className="flex items-start gap-3">
+                                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-medium text-sm shrink-0 shadow-sm">
                                                 {doc.name.charAt(0)}
                                               </div>
                                               <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-gray-800 text-sm truncate">
-                                                  Dr. {doc.name}
+                                                <div className="font-medium text-gray-800 text-sm leading-tight break-words">
+                                                  Dr. {highlightMatch(doc.name, doctorSearchTerm)}
                                                 </div>
-                                                <div className="text-xs text-gray-500 truncate">
-                                                  {`Poli ${
-                                                    doc.poli_name || "N/A"
-                                                  }`}
+                                                <div className="text-xs text-gray-500 truncate mt-0.5">
+                                                  Poliklinik {highlightMatch(doc.poli_name || "N/A", doctorSearchTerm)}
                                                 </div>
                                               </div>
                                             </div>
                                           </div>
                                           <div
-                                            className={`px-2 py-0.5 rounded-lg text-xs font-medium flex items-center border shrink-0 ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor}`}
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center border shrink-0 ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor}`}
                                           >
                                             <StatusIcon
-                                              size={10}
+                                              size={11}
                                               className={`mr-1 ${statusConfig.iconColor}`}
                                             />
                                             {statusConfig.label}
@@ -2699,25 +2761,59 @@ const RawatJalan = () => {
                         </div>
                         Tanggal Kunjungan
                       </label>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={appointmentDate}
-                          onChange={(e) =>
-                            handleInputChange(e, "appointmentDate")
-                          }
-                          min={format(startOfToday(), "yyyy-MM-dd")}
+                      <div className="flex gap-2 group">
+                        <div className="relative flex-1">
+                          <input
+                            ref={dateInputRef}
+                            type="date"
+                            value={appointmentDate}
+                            onChange={(e) =>
+                              handleInputChange(e, "appointmentDate")
+                            }
+                            onFocus={() => console.log('Date input focused')}
+                            onBlur={() => console.log('Date input blurred')}
+                            min={format(startOfToday(), "yyyy-MM-dd")}
+                            disabled={!!selectedSlot}
+                            className={`w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500 ${
+                              !!selectedSlot
+                                ? "bg-gray-100 cursor-not-allowed"
+                                : ""
+                            }`}
+                          />
+                          <Calendar
+                            size={16}
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Calendar button clicked'); // Debug log
+                            openDatePicker();
+                          }}
+                          onMouseDown={(e) => {
+                            // Mencegah input date kehilangan focus
+                            e.preventDefault();
+                          }}
+                          onTouchStart={(e) => {
+                            // Untuk mobile devices
+                            e.preventDefault();
+                            openDatePicker();
+                          }}
                           disabled={!!selectedSlot}
-                          className={`w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500 ${
+                          className={`px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center shadow-sm ${
                             !!selectedSlot
-                              ? "bg-gray-100 cursor-not-allowed"
-                              : ""
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 hover:shadow-md focus:ring-2 focus:ring-blue-200 focus:border-blue-500 active:scale-95"
                           }`}
-                        />
-                        <Calendar
-                          size={16}
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                        />
+                          title="Pilih tanggal dari kalender"
+                        >
+                          <Calendar size={16} className={`${
+                            !!selectedSlot ? "text-gray-400" : "text-gray-500 group-hover:text-blue-600"
+                          }`} />
+                        </button>
                       </div>
                     </div>
 
@@ -2734,7 +2830,7 @@ const RawatJalan = () => {
                           <div className="relative">
                             <input
                               type="text"
-                              placeholder="Cari dokter berdasarkan nama..."
+                              placeholder="Cari dokter berdasarkan nama atau poliklinik..."
                               value={doctorSearchTerm}
                               onChange={(e) => {
                                 setDoctorSearchTerm(e.target.value);
@@ -2770,7 +2866,12 @@ const RawatJalan = () => {
                                         .toLowerCase()
                                         .includes(
                                           doctorSearchTerm.toLowerCase()
-                                        )
+                                        ) ||
+                                      (doc.poli_name && doc.poli_name
+                                        .toLowerCase()
+                                        .includes(
+                                          doctorSearchTerm.toLowerCase()
+                                        ))
                                   );
 
                                   if (filteredDoctors.length === 0) {
@@ -2814,16 +2915,14 @@ const RawatJalan = () => {
                                               </div>
                                               <div className="flex-1 min-w-0 overflow-hidden">
                                                 <h4 className="font-medium text-gray-800 truncate">
-                                                  Dr. {doc.name}
+                                                  Dr. {highlightMatch(doc.name, doctorSearchTerm)}
                                                 </h4>
                                                 <div className="mt-1 flex items-center text-xs text-gray-500 truncate">
                                                   <Building2
                                                     size={12}
                                                     className="mr-1 shrink-0"
                                                   />
-                                                  <span className="truncate">{`Poliklinik ${
-                                                    doc.poli_name || "N/A"
-                                                  }`}</span>
+                                                  <span className="truncate">Poliklinik {highlightMatch(doc.poli_name || "N/A", doctorSearchTerm)}</span>
                                                 </div>
                                               </div>
                                             </div>

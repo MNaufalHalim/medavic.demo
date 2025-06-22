@@ -175,6 +175,7 @@ const MedicalRecordModal = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [options, setOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [tempMedication, setTempMedication] = useState(null);
   const [tempPreset, setTempPreset] = useState(null);
 
@@ -185,6 +186,7 @@ const MedicalRecordModal = ({
       setSearchTerm("");
       setOptions([]);
       setIsLoading(false);
+      setIsSubmitting(false);
       setTempMedication(null);
       setTempPreset(null);
     }
@@ -344,6 +346,20 @@ const MedicalRecordModal = ({
     return typeof item === "object" && item.name ? item.name : item;
   };
 
+  // Handle save with local loading state
+  const handleSave = async () => {
+    try {
+      setIsSubmitting(true);
+      await onSave(type, medicationDetails);
+    } catch (error) {
+      console.error("Error saving medical record:", error);
+      // Error handling is done in the parent component (handleSaveMedicalRecord)
+      // Modal will be closed automatically on success, or error will be shown
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!show) return null;
 
   return (
@@ -383,7 +399,12 @@ const MedicalRecordModal = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl hover:bg-white/50 text-gray-400 hover:text-gray-700 transition-all duration-200"
+              disabled={isSubmitting}
+              className={`p-2 rounded-xl transition-all duration-200 ${
+                isSubmitting
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "text-gray-400 hover:text-gray-700 hover:bg-white/50"
+              }`}
             >
               <X size={20} />
             </button>
@@ -615,33 +636,35 @@ const MedicalRecordModal = ({
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
             <button
               onClick={onClose}
-              className="px-6 py-3 text-sm font-semibold text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-xl transition-all duration-200 flex items-center gap-2"
+              disabled={isSubmitting}
+              className={`px-5 py-2 text-sm font-semibold rounded-lg border transition-all duration-200 flex items-center gap-2 shadow-none
+                ${
+                  isSubmitting
+                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                    : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                }
+              `}
             >
-              <div className="w-4 h-4 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center">
-                <X size={12} className="text-white" />
-              </div>
+              <X size={16} />
               Batal
             </button>
             <button
-              onClick={() => onSave(type, medicationDetails)}
-              disabled={loading}
-              className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 ${
-                loading
-                  ? "bg-gray-300 text-gray-400 cursor-not-allowed"
-                  : `bg-gradient-to-r from-${modalConfig[type].accent}-600 to-${modalConfig[type].accent}-700 hover:from-${modalConfig[type].accent}-700 hover:to-${modalConfig[type].accent}-800 text-white shadow-lg hover:shadow-xl`
-              }`}
+              onClick={handleSave}
+              disabled={isSubmitting}
+              className={`px-5 py-2 text-sm font-semibold rounded-lg border transition-all duration-200 flex items-center gap-2 shadow-none
+                ${
+                  isSubmitting
+                    ? "bg-blue-100 text-blue-300 border-blue-100 cursor-not-allowed"
+                    : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+                }
+              `}
             >
-              {loading ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin" />
-                  Menyimpan...
-                </>
+              {isSubmitting ? (
+                <RefreshCw size={16} className="animate-spin" />
               ) : (
-                <>
-                  <Save size={16} />
-                  Simpan {title}
-                </>
+                <Save size={16} />
               )}
+              Simpan {title}
             </button>
           </div>
         </div>
@@ -867,6 +890,16 @@ const InputRM = () => {
 
           // Reset modal state after successful save
           resetModalState(type);
+          
+          // Show success message
+          const titleMap = {
+            procedure: "Tindakan",
+            diagnose: "Diagnosa", 
+            medication: "Obat"
+          };
+          const title = titleMap[type] || type;
+          setSuccessMessage(`${title} berhasil disimpan!`);
+          setTimeout(() => setSuccessMessage(null), 3000);
 
           setMedicalRecord((prev) => {
             // For medications, store the full object with details
@@ -894,16 +927,36 @@ const InputRM = () => {
           // Fetch updated data from server to ensure consistency
           await fetchPatientData(selectedPatientData?.no_rm);
         } else {
-          setError(response.data.message || `Gagal menyimpan ${type}`);
+          const titleMap = {
+            procedure: "Tindakan",
+            diagnose: "Diagnosa", 
+            medication: "Obat"
+          };
+          const title = titleMap[type] || type;
+          const errorMessage =
+            response.data.message ||
+            `Gagal menyimpan ${title}. Silakan coba lagi.`;
+          setError(errorMessage);
+          console.error(`Failed to save ${type}:`, response.data);
         }
       } catch (error) {
         console.error(`Error saving ${type}:`, error);
-        setError(error.response?.data?.message || `Gagal menyimpan ${type}`);
+        const titleMap = {
+          procedure: "Tindakan",
+          diagnose: "Diagnosa", 
+          medication: "Obat"
+        };
+        const title = titleMap[type] || type;
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          `Gagal menyimpan ${title}. Silakan coba lagi.`;
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
     },
-    [visitHistory, modalState, selectedPatientData, updateModalState]
+    [visitHistory, modalState, selectedPatientData, updateModalState, resetModalState]
   );
 
   const handleSelectItem = useCallback(
@@ -1022,6 +1075,7 @@ const InputRM = () => {
           : vitals.temperature.replace("° C", ""),
     });
     const [errorMessage, setErrorMessage] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleInputChange = (field, value) => {
       setTempVitals((prev) => ({ ...prev, [field]: value }));
@@ -1040,7 +1094,7 @@ const InputRM = () => {
 
     const handleSubmit = async () => {
       try {
-        setLoading(true);
+        setIsSubmitting(true);
         setErrorMessage(null);
         const token = localStorage.getItem("token");
 
@@ -1119,6 +1173,11 @@ const InputRM = () => {
             : "Belum diisi",
         });
         await fetchPatientData(selectedPatientData?.no_rm);
+
+        // Show success message
+        setSuccessMessage("Tanda vital berhasil disimpan!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+
         onClose();
       } catch (error) {
         console.error("Error saving vitals:", error);
@@ -1127,7 +1186,7 @@ const InputRM = () => {
           "Gagal menyimpan vital signs. Silakan coba lagi.";
         setErrorMessage(errorMsg);
       } finally {
-        setLoading(false);
+        setIsSubmitting(false);
       }
     };
 
@@ -1152,7 +1211,12 @@ const InputRM = () => {
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl hover:bg-white/50 text-gray-400 hover:text-gray-700 transition-all duration-200"
+                disabled={isSubmitting}
+                className={`p-2 rounded-xl transition-all duration-200 ${
+                  isSubmitting
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-gray-400 hover:text-gray-700 hover:bg-white/50"
+                }`}
               >
                 <X size={20} />
               </button>
@@ -1240,7 +1304,12 @@ const InputRM = () => {
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button
                 onClick={onClose}
-                className="px-6 py-3 text-sm font-semibold text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-xl transition-all duration-200 flex items-center gap-2"
+                disabled={isSubmitting}
+                className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 ${
+                  isSubmitting
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300"
+                }`}
               >
                 <div className="w-4 h-4 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center">
                   <X size={12} className="text-white" />
@@ -1249,14 +1318,14 @@ const InputRM = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!isFormValid() || loading}
+                disabled={!isFormValid() || isSubmitting}
                 className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 ${
-                  isFormValid() && !loading
+                  isFormValid() && !isSubmitting
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
               >
-                {loading ? (
+                {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
                       <RefreshCw
@@ -1344,6 +1413,7 @@ const InputRM = () => {
       setMedicalRecord({ procedures: [], diagnoses: [], medications: [] });
       setVisitHistory([]);
       setError(null);
+      setSuccessMessage(null);
       return;
     }
 
@@ -1360,6 +1430,7 @@ const InputRM = () => {
     setMedicalRecord({ procedures: [], diagnoses: [], medications: [] });
     setVisitHistory([]);
     setError(null);
+    setSuccessMessage(null);
     fetchPatientData(patient.no_rm);
   };
 
@@ -1367,6 +1438,8 @@ const InputRM = () => {
     try {
       setLoading(true);
       setIsRefreshing(true);
+      setError(null);
+      setSuccessMessage(null);
       const token = localStorage.getItem("token");
 
       // Using the getWaitingPatients endpoint with date filter
@@ -1427,10 +1500,11 @@ const InputRM = () => {
       }
     } catch (error) {
       console.error("Error fetching patients:", error);
-      setError(
-        "Gagal mengambil data pasien: " +
-          (error.response?.data?.message || error.message)
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Gagal mengambil data pasien. Silakan coba lagi.";
+      setError(errorMessage);
       setPatientOptions([]);
       setPatients([]);
     } finally {
@@ -1554,7 +1628,11 @@ const InputRM = () => {
       }
     } catch (error) {
       console.error("Error fetching patient data:", error);
-      setError("Gagal mengambil data pasien");
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Gagal mengambil data pasien. Silakan coba lagi.";
+      setError(errorMessage);
       setVitals({
         height: "Belum diisi",
         weight: "Belum diisi",
@@ -1620,7 +1698,11 @@ const InputRM = () => {
         setTimeout(() => setSuccessMessage(null), 3000);
       } catch (error) {
         console.error("Error completing appointment:", error);
-        setError("Gagal menyelesaikan pemeriksaan pasien");
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Gagal menyelesaikan pemeriksaan pasien. Silakan coba lagi.";
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -1644,7 +1726,11 @@ const InputRM = () => {
         setTimeout(() => setSuccessMessage(null), 3000);
       } catch (error) {
         console.error("Error reactivating appointment:", error);
-        setError("Gagal mengaktifkan kembali pemeriksaan");
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Gagal mengaktifkan kembali pemeriksaan. Silakan coba lagi.";
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -1683,8 +1769,10 @@ const InputRM = () => {
   }, []);
 
   const isExamined = selectedPatientData?.status === "examined";
+  const isDispensed = selectedPatientData?.status === "dispensed";
   const isCompleted = selectedPatientData?.status === "completed";
-  const isReadOnly = isExamined || isCompleted;
+  const isReadOnly = isExamined || isDispensed || isCompleted;
+  const shouldShowReactivate = isExamined || isDispensed;
 
   return (
     <PageTemplate>
@@ -1761,22 +1849,38 @@ const InputRM = () => {
         {/* Notifications */}
         {successMessage && (
           <div className="mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl text-green-700 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                <Check size={10} className="text-white" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                  <Check size={10} className="text-white" />
+                </div>
+                <span className="font-medium text-sm">{successMessage}</span>
               </div>
-              <span className="font-medium text-sm">{successMessage}</span>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-green-400 hover:text-green-600 transition-colors duration-200"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
         )}
 
         {error && (
           <div className="mb-4 p-3 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl text-red-700 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
-                <X size={10} className="text-white" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
+                  <X size={10} className="text-white" />
+                </div>
+                <span className="font-medium text-sm">{error}</span>
               </div>
-              <span className="font-medium text-sm">{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-600 transition-colors duration-200"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
         )}
@@ -1874,10 +1978,14 @@ const InputRM = () => {
                           </p>
                           <div className="mt-1.5 text-xs text-gray-600 flex items-center">
                             <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-1.5 shadow-sm">
-                              <Clock size={6} className="text-white sm:w-2 sm:h-2" />
+                              <Clock
+                                size={6}
+                                className="text-white sm:w-2 sm:h-2"
+                              />
                             </div>
                             <span className="truncate">
-                              {patient.appointmentTime} - Dr. {patient.doctorName}
+                              {patient.appointmentTime} - Dr.{" "}
+                              {patient.doctorName}
                             </span>
                           </div>
                         </div>
@@ -1956,21 +2064,36 @@ const InputRM = () => {
                         <div className="flex flex-wrap gap-2 sm:gap-3 mt-1">
                           <span className="flex items-center text-xs sm:text-sm text-gray-500">
                             <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-1 shadow-sm flex-shrink-0">
-                              <CreditCard size={6} className="text-white sm:w-2 sm:h-2" />
+                              <CreditCard
+                                size={6}
+                                className="text-white sm:w-2 sm:h-2"
+                              />
                             </div>
-                            <span className="truncate">{selectedPatientData?.no_rm || ""}</span>
+                            <span className="truncate">
+                              {selectedPatientData?.no_rm || ""}
+                            </span>
                           </span>
                           <span className="flex items-center text-xs sm:text-sm text-gray-500">
                             <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-1 shadow-sm flex-shrink-0">
-                              <Calendar size={6} className="text-white sm:w-2 sm:h-2" />
+                              <Calendar
+                                size={6}
+                                className="text-white sm:w-2 sm:h-2"
+                              />
                             </div>
-                            <span className="truncate">{selectedPatientData?.age || ""}</span>
+                            <span className="truncate">
+                              {selectedPatientData?.age || ""}
+                            </span>
                           </span>
                           <span className="flex items-center text-xs sm:text-sm text-gray-500">
                             <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center mr-1 shadow-sm flex-shrink-0">
-                              <Stethoscope size={6} className="text-white sm:w-2 sm:h-2" />
+                              <Stethoscope
+                                size={6}
+                                className="text-white sm:w-2 sm:h-2"
+                              />
                             </div>
-                            <span className="truncate">Dr. {selectedPatientData?.doctorName || "N/A"}</span>
+                            <span className="truncate">
+                              Dr. {selectedPatientData?.doctorName || "N/A"}
+                            </span>
                           </span>
                         </div>
                       </div>
@@ -1982,7 +2105,10 @@ const InputRM = () => {
                       <div className="flex-1 sm:flex-none sm:min-w-[200px] sm:max-w-[250px]">
                         <p className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center mb-1">
                           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-1.5 shadow-sm flex-shrink-0">
-                            <FileText size={6} className="text-white sm:w-2 sm:h-2" />
+                            <FileText
+                              size={6}
+                              className="text-white sm:w-2 sm:h-2"
+                            />
                           </div>
                           Keluhan Utama
                         </p>
@@ -1995,14 +2121,20 @@ const InputRM = () => {
 
                       {/* Complete/Reactivate Button */}
                       <button
-                        onClick={isExamined ? handleReactivate : handleComplete}
-                        disabled={loading || !selectedPatientData || isCompleted}
+                        onClick={
+                          shouldShowReactivate
+                            ? handleReactivate
+                            : handleComplete
+                        }
+                        disabled={
+                          loading || !selectedPatientData || isCompleted
+                        }
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200 w-full sm:w-28 justify-center flex-shrink-0 ${
                           loading || !selectedPatientData
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : isCompleted
                             ? "bg-gradient-to-r from-slate-500 to-gray-600 text-white shadow-lg"
-                            : isExamined
+                            : shouldShowReactivate
                             ? "bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl"
                             : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl"
                         }`}
@@ -2011,7 +2143,7 @@ const InputRM = () => {
                             ? "Pilih pasien terlebih dahulu"
                             : isCompleted
                             ? "Pemeriksaan sudah final"
-                            : isExamined
+                            : shouldShowReactivate
                             ? "Aktifkan kembali pemeriksaan"
                             : "Selesaikan pemeriksaan pasien"
                         }
@@ -2027,7 +2159,7 @@ const InputRM = () => {
                           <div className="w-3 h-3 bg-white/20 rounded-lg flex items-center justify-center">
                             <Lock size={10} className="text-white" />
                           </div>
-                        ) : isExamined ? (
+                        ) : shouldShowReactivate ? (
                           <div className="w-3 h-3 bg-white/20 rounded-lg flex items-center justify-center">
                             <RefreshCw size={10} className="text-white" />
                           </div>
@@ -2038,7 +2170,7 @@ const InputRM = () => {
                         )}
                         {isCompleted
                           ? "Final"
-                          : isExamined
+                          : shouldShowReactivate
                           ? "Reactivate"
                           : "Complete"}
                       </button>
@@ -2055,7 +2187,10 @@ const InputRM = () => {
                       <div className="flex justify-between items-center mb-3 sm:mb-4">
                         <h2 className="text-sm sm:text-base font-bold text-gray-800 flex items-center">
                           <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
-                            <Activity size={12} className="text-white sm:w-3 sm:h-3" />
+                            <Activity
+                              size={12}
+                              className="text-white sm:w-3 sm:h-3"
+                            />
                           </div>
                           Tanda Vital
                         </h2>
@@ -2069,7 +2204,10 @@ const InputRM = () => {
                           disabled={visitHistory.length === 0 || isReadOnly}
                         >
                           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                            <Edit3 size={6} className="text-white sm:w-2 sm:h-2" />
+                            <Edit3
+                              size={6}
+                              className="text-white sm:w-2 sm:h-2"
+                            />
                           </div>
                           Edit
                         </button>
@@ -2079,14 +2217,22 @@ const InputRM = () => {
                           {
                             label: "Tinggi",
                             value: vitals.height,
-                            icon: <Ruler size={16} className="text-blue-500 sm:w-4 sm:h-4" />,
+                            icon: (
+                              <Ruler
+                                size={16}
+                                className="text-blue-500 sm:w-4 sm:h-4"
+                              />
+                            ),
                             color: "from-blue-500 to-indigo-600",
                           },
                           {
                             label: "Berat",
                             value: vitals.weight,
                             icon: (
-                              <Weight size={16} className="text-green-500 sm:w-4 sm:h-4" />
+                              <Weight
+                                size={16}
+                                className="text-green-500 sm:w-4 sm:h-4"
+                              />
                             ),
                             color: "from-green-500 to-emerald-600",
                           },
@@ -2104,14 +2250,22 @@ const InputRM = () => {
                           {
                             label: "Jantung",
                             value: vitals.heartRate,
-                            icon: <Heart size={16} className="text-red-500 sm:w-4 sm:h-4" />,
+                            icon: (
+                              <Heart
+                                size={16}
+                                className="text-red-500 sm:w-4 sm:h-4"
+                              />
+                            ),
                             color: "from-red-500 to-pink-600",
                           },
                           {
                             label: "Gula Darah",
                             value: vitals.bloodSugar,
                             icon: (
-                              <Droplet size={16} className="text-purple-500 sm:w-4 sm:h-4" />
+                              <Droplet
+                                size={16}
+                                className="text-purple-500 sm:w-4 sm:h-4"
+                              />
                             ),
                             color: "from-purple-500 to-indigo-600",
                           },
@@ -2145,7 +2299,10 @@ const InputRM = () => {
                     <div className="space-y-3 sm:space-y-4">
                       <h2 className="text-sm sm:text-base font-bold text-gray-800 flex items-center">
                         <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
-                          <ClipboardList size={12} className="text-white sm:w-3 sm:h-3" />
+                          <ClipboardList
+                            size={12}
+                            className="text-white sm:w-3 sm:h-3"
+                          />
                         </div>
                         Input Rekam Medis
                       </h2>
@@ -2295,7 +2452,10 @@ const InputRM = () => {
                     <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
                       <h2 className="text-base sm:text-lg font-bold text-gray-800 flex items-center mb-4 sm:mb-6">
                         <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
-                          <Clock size={14} className="text-white sm:w-4 sm:h-4" />
+                          <Clock
+                            size={14}
+                            className="text-white sm:w-4 sm:h-4"
+                          />
                         </div>
                         Riwayat Kunjungan
                       </h2>
@@ -2323,7 +2483,9 @@ const InputRM = () => {
                                 </div>
                                 <p className="text-xs sm:text-sm text-gray-600 mb-2">
                                   <span className="font-medium">Dokter:</span>{" "}
-                                  <span className="truncate">{visit.doctor}</span>
+                                  <span className="truncate">
+                                    {visit.doctor}
+                                  </span>
                                 </p>
                                 <div className="bg-gradient-to-r from-slate-50 to-gray-50 p-2 sm:p-3 rounded-md shadow-sm border border-gray-100">
                                   <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">
@@ -2341,7 +2503,9 @@ const InputRM = () => {
                             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
                               <Clock className="text-gray-400" size={20} />
                             </div>
-                            <p className="text-sm sm:text-base">Tidak ada riwayat kunjungan</p>
+                            <p className="text-sm sm:text-base">
+                              Tidak ada riwayat kunjungan
+                            </p>
                           </div>
                         )}
                       </div>

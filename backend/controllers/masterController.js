@@ -51,25 +51,119 @@ const doctorController = {
   },
 
   createDoctor: async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-      const { name, specialization, phone_number, email, schedule, status, poli } = req.body;
+      await connection.beginTransaction();
+      
+      const { name, specialization, license_no, phone_number, email, schedule, status, poli } = req.body;
 
-      const [result] = await pool.query(
-        'INSERT INTO doctors (name, specialization, phone_number, email, schedule, status, poli) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [name, specialization, phone_number, email, schedule, status, poli || null]
+      // Validasi field wajib
+      if (!name || !specialization || !license_no) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nama, spesialisasi, dan nomor SIP/STR dokter wajib diisi'
+        });
+      }
+
+      // Validasi format nomor SIP/STR
+      if (license_no.length < 6 || license_no.length > 20) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nomor SIP/STR harus antara 6-20 karakter'
+        });
+      }
+
+      // Validasi karakter yang diperbolehkan
+      const licenseNoRegex = /^[A-Za-z0-9\-\.\/]+$/;
+      if (!licenseNoRegex.test(license_no)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nomor SIP/STR hanya boleh berisi huruf, angka, tanda hubung (-), titik (.), dan garis miring (/)'
+        });
+      }
+
+      // Validasi schedule: jam mulai < jam selesai
+      if (Array.isArray(schedule)) {
+        for (const slot of schedule) {
+          if (slot.start_time && slot.end_time) {
+            const start = parseInt(slot.start_time.split(':')[0]);
+            const end = parseInt(slot.end_time.split(':')[0]);
+            if (start >= end) {
+              return res.status(400).json({
+                status: 'error',
+                message: `Jadwal pada hari ${slot.day_of_week} tidak valid: jam mulai harus lebih awal dari jam selesai.`
+              });
+            }
+          }
+        }
+      }
+
+      // Cek duplikasi nomor SIP/STR
+      const [existingDoctor] = await connection.query(
+        'SELECT id FROM doctors WHERE license_no = ? AND delt_flg = "N"',
+        [license_no]
       );
+
+      if (existingDoctor.length > 0) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nomor SIP/STR sudah terdaftar untuk dokter lain'
+        });
+      }
+
+      // 1. Insert doctor's details
+      const [result] = await connection.query(
+        'INSERT INTO doctors (name, specialization, license_no, phone_number, email, status, poli) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, specialization, license_no, phone_number, email, status, poli || null]
+      );
+
+      const doctorId = result.insertId;
+
+      // 2. Insert schedules if any are provided
+      if (Array.isArray(schedule) && schedule.length > 0) {
+        const scheduleValues = schedule.map(s => [doctorId, s.day_of_week, s.start_time, s.end_time, s.is_active]);
+        await connection.query(
+          'INSERT INTO doctor_schedule (doctor_id, day_of_week, start_time, end_time, is_active) VALUES ?',
+          [scheduleValues]
+        );
+      }
+
+      await connection.commit();
+
+      // Fetch the created schedules to return to the frontend
+      const [newSchedules] = await connection.query(
+        'SELECT id, day_of_week, start_time, end_time FROM doctor_schedule WHERE doctor_id = ? ORDER BY FIELD(day_of_week, "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"), start_time',
+        [doctorId]
+      );
+
+      // Group schedules by day for the frontend
+      const schedulesByDay = newSchedules.reduce((acc, schedule) => {
+        const day = schedule.day_of_week;
+        if (!acc[day]) {
+          acc[day] = [];
+        }
+        const { day_of_week, ...rest } = schedule;
+        acc[day].push(rest);
+        return acc;
+      }, {});
 
       res.status(201).json({
         status: 'success',
-        message: 'Data dokter berhasil ditambahkan',
-        data: { id: result.insertId }
+        message: 'Data dokter dan jadwal berhasil ditambahkan',
+        data: { 
+          id: doctorId,
+          schedule: schedulesByDay
+        }
       });
     } catch (error) {
-      console.error('Error in createDoctor:', error);
+      await connection.rollback();
+      console.error('Error in createDoctor transaction:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Gagal menambahkan data dokter'
+        message: 'Gagal menambahkan data dokter. Transaksi dibatalkan.'
       });
+    } finally {
+      connection.release();
     }
   },
 
@@ -78,12 +172,66 @@ const doctorController = {
     try {
       await connection.beginTransaction();
       const { id } = req.params;
-      const { name, specialization, phone_number, email, status, schedule = [], poli } = req.body;
+      const { name, specialization, license_no, phone_number, email, status, schedule = [], poli } = req.body;
+
+      // Validasi field wajib
+      if (!name || !specialization || !license_no) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nama, spesialisasi, dan nomor SIP/STR dokter wajib diisi'
+        });
+      }
+
+      // Validasi format nomor SIP/STR
+      if (license_no.length < 6 || license_no.length > 20) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nomor SIP/STR harus antara 6-20 karakter'
+        });
+      }
+
+      // Validasi karakter yang diperbolehkan
+      const licenseNoRegex = /^[A-Za-z0-9\-\.\/]+$/;
+      if (!licenseNoRegex.test(license_no)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nomor SIP/STR hanya boleh berisi huruf, angka, tanda hubung (-), titik (.), dan garis miring (/)'
+        });
+      }
+
+      // Validasi schedule: jam mulai < jam selesai
+      if (Array.isArray(schedule)) {
+        for (const slot of schedule) {
+          if (slot.start_time && slot.end_time) {
+            const start = parseInt(slot.start_time.split(':')[0]);
+            const end = parseInt(slot.end_time.split(':')[0]);
+            if (start >= end) {
+              return res.status(400).json({
+                status: 'error',
+                message: `Jadwal pada hari ${slot.day_of_week} tidak valid: jam mulai harus lebih awal dari jam selesai.`
+              });
+            }
+          }
+        }
+      }
+
+      // Cek duplikasi nomor SIP/STR (kecuali untuk dokter yang sedang diupdate)
+      const [existingDoctor] = await pool.query(
+        'SELECT id FROM doctors WHERE license_no = ? AND id != ? AND delt_flg = "N"',
+        [license_no, id]
+      );
+
+      if (existingDoctor.length > 0) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nomor SIP/STR sudah terdaftar untuk dokter lain'
+        });
+      }
 
       // 1. Update doctor's details
       await connection.query(
-        'UPDATE doctors SET name = ?, specialization = ?, phone_number = ?, email = ?, status = ?, poli = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [name, specialization, phone_number, email, status, poli || null, id]
+        'UPDATE doctors SET name = ?, specialization = ?, license_no = ?, phone_number = ?, email = ?, status = ?, poli = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, specialization, license_no, phone_number, email, status, poli || null, id]
       );
 
       // 2. Delete all existing schedules for this doctor

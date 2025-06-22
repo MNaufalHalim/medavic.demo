@@ -290,7 +290,8 @@ const medicalController = {
       `, [targetVisitId]);
 
       const [diagnoses] = await pool.query(`
-        SELECT CONCAT(d.code, ' - ', d.name) AS diagnosis_name 
+        SELECT 
+          d.name AS diagnosis_name 
         FROM visit_diagnoses vd
         JOIN visits v ON vd.visit_id = v.visit_id
         LEFT JOIN diagnoses d ON vd.diagnose_id = d.id
@@ -562,7 +563,7 @@ const medicalController = {
       }
 
       const [procedures] = await pool.query(
-        `SELECT id, name FROM services WHERE name LIKE ? ORDER BY name LIMIT 10`,
+        `SELECT id, name FROM services WHERE name LIKE ? AND delt_flg = 'N' ORDER BY name LIMIT 10`,
         [`%${search}%`]
       );
 
@@ -591,7 +592,7 @@ const medicalController = {
       }
 
       const [medications] = await pool.query(
-        `SELECT id, name, stock, price FROM medicines WHERE name LIKE ? ORDER BY name LIMIT 10`,
+        `SELECT id, name, stock, price FROM medicines WHERE name LIKE ? AND delt_flg = 'N' ORDER BY name LIMIT 10`,
         [`%${search}%`]
       );
 
@@ -627,7 +628,7 @@ const medicalController = {
       }
 
       const [diagnoses] = await pool.query(
-        `SELECT id, code, name FROM diagnoses WHERE name LIKE ? OR code LIKE ? ORDER BY name LIMIT 10`,
+        `SELECT id, code, name FROM diagnoses WHERE (name LIKE ? OR code LIKE ?) AND delt_flg = 'N' ORDER BY name LIMIT 10`,
         [`%${search}%`, `%${search}%`]
       );
 
@@ -679,7 +680,7 @@ const medicalController = {
             const procedureName = typeof item === 'object' && item.name ? item.name : item;
             console.log('Processing procedure:', procedureName); // Debug log
             
-            const [procedure] = await connection.query('SELECT id FROM services WHERE name = ?', [procedureName]);
+            const [procedure] = await connection.query('SELECT id FROM services WHERE name = ? AND delt_flg = "N"', [procedureName]);
             console.log('Found procedure:', procedure); // Debug log
             
             if (!procedure || procedure.length === 0) {

@@ -217,7 +217,11 @@ const Poli = () => {
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative"
             >
-              <button onClick={() => setModal({ show: false, mode: 'add', item: null })} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold">
+              <button 
+                onClick={() => setModal({ show: false, mode: 'add', item: null })} 
+                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors duration-200"
+                disabled={saving}
+              >
                 <XCircle size={24} />
               </button>
               <h3 className="text-xl font-bold mb-6 text-blue-700 flex items-center gap-2">
@@ -227,41 +231,72 @@ const Poli = () => {
                 {modal.mode === 'add' ? 'Tambah Poli' : 'Edit Poli'}
               </h3>
               <form onSubmit={e => { e.preventDefault(); handleSave(modal.item); }}>
-                <div className="mb-6">
-                  <label className="block mb-1 font-semibold text-blue-700">Nama Poli</label>
-                  <input
-                    type="text"
-                    className="w-full border-b-2 border-blue-200 focus:border-blue-600 px-2 py-2 outline-none bg-blue-50 rounded"
-                    value={modal.item?.name || ''}
-                    onChange={e => setModal(m => ({ ...m, item: { ...m.item, name: e.target.value } }))}
-                    required
-                  />
-                </div>
-                <div className="mb-6">
-                  <label className="block mb-1 font-semibold text-blue-700">Kode</label>
-                  <input
-                    type="text"
-                    className="w-full border-b-2 border-blue-200 focus:border-blue-600 px-2 py-2 outline-none bg-blue-50 rounded"
-                    value={modal.item?.code || ''}
-                    onChange={e => setModal(m => ({ ...m, item: { ...m.item, code: e.target.value } }))}
-                    required
-                  />
-                </div>
-                {modal.mode === 'edit' && (
-                  <div className="mb-6 grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block mb-1 text-xs text-gray-500">Created</label>
-                      <div className="text-xs text-gray-700 bg-gray-50 rounded px-2 py-1">{modal.item?.created_dt ? new Date(modal.item.created_dt).toLocaleString('id-ID') : '-'}</div>
-                    </div>
-                    <div>
-                      <label className="block mb-1 text-xs text-gray-500">Updated</label>
-                      <div className="text-xs text-gray-700 bg-gray-50 rounded px-2 py-1">{modal.item?.update_dt ? new Date(modal.item.update_dt).toLocaleString('id-ID') : '-'}</div>
-                    </div>
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nama Poli <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-300 hover:border-blue-300"
+                      placeholder="Masukkan nama poli"
+                      value={modal.item?.name || ''}
+                      onChange={e => setModal(m => ({ ...m, item: { ...m.item, name: e.target.value } }))}
+                      required
+                    />
                   </div>
-                )}
-                <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => setModal({ show: false, mode: 'add', item: null })} className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 font-semibold">Batal</button>
-                  <button type="submit" disabled={saving} className="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold shadow hover:bg-blue-700 disabled:opacity-60">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kode <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-300 hover:border-blue-300"
+                      placeholder="Masukkan kode poli"
+                      value={modal.item?.code || ''}
+                      onChange={e => setModal(m => ({ ...m, item: { ...m.item, code: e.target.value } }))}
+                      required
+                    />
+                  </div>
+                  {modal.mode === 'edit' && (
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Created</label>
+                        <div className="text-xs text-gray-700 bg-white rounded-lg px-3 py-2 border border-gray-200">
+                          {modal.item?.created_dt ? new Date(modal.item.created_dt).toLocaleString('id-ID') : '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Updated</label>
+                        <div className="text-xs text-gray-700 bg-white rounded-lg px-3 py-2 border border-gray-200">
+                          {modal.item?.update_dt ? new Date(modal.item.update_dt).toLocaleString('id-ID') : '-'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end gap-3 mt-8">
+                  <button 
+                    type="button" 
+                    onClick={() => setModal({ show: false, mode: 'add', item: null })} 
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all duration-300 flex items-center gap-2 text-sm border border-gray-300 hover:scale-105"
+                    disabled={saving}
+                  >
+                    <div className="w-4 h-4 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center">
+                      <XCircle size={12} className="text-white" />
+                    </div>
+                    Batal
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={saving} 
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-sm disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105"
+                  >
+                    {saving ? (
+                      <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                        <Loader2 size={12} className="animate-spin text-white" />
+                      </div>
+                    ) : (
+                      <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                        <Save size={12} className="text-white" />
+                      </div>
+                    )}
                     {saving ? 'Menyimpan...' : 'Simpan'}
                   </button>
                 </div>
