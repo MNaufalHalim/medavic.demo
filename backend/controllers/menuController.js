@@ -179,6 +179,61 @@ const menuController = {
         message: 'Failed to fetch user menus'
       });
     }
+  },
+
+  // CREATE MENU
+  createMenu: async (req, res) => {
+    try {
+      const { menu_name, menu_path, icon, parent_id, order_number } = req.body;
+      const [result] = await pool.query(
+        'INSERT INTO sys_menu (menu_name, menu_path, icon, parent_id, order_number, delt_flg) VALUES (?, ?, ?, ?, ?, ?)',
+        [menu_name, menu_path, icon, parent_id || null, order_number, 'N']
+      );
+      res.status(201).json({
+        status: 'success',
+        data: { id: result.insertId, menu_name, menu_path, icon, parent_id, order_number }
+      });
+    } catch (error) {
+      console.error('Error in createMenu:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal menambah menu' });
+    }
+  },
+
+  // UPDATE MENU
+  updateMenu: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { menu_name, menu_path, icon, parent_id, order_number } = req.body;
+      const [result] = await pool.query(
+        'UPDATE sys_menu SET menu_name=?, menu_path=?, icon=?, parent_id=?, order_number=? WHERE id=? AND delt_flg="N"',
+        [menu_name, menu_path, icon, parent_id || null, order_number, id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Menu tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Menu berhasil diupdate' });
+    } catch (error) {
+      console.error('Error in updateMenu:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal update menu' });
+    }
+  },
+
+  // DELETE MENU (soft delete)
+  deleteMenu: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [result] = await pool.query(
+        'UPDATE sys_menu SET delt_flg="Y" WHERE id=?',
+        [id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Menu tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Menu berhasil dihapus' });
+    } catch (error) {
+      console.error('Error in deleteMenu:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal menghapus menu' });
+    }
   }
 };
 

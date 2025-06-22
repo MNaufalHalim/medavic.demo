@@ -67,8 +67,8 @@ const RawatJalan = () => {
           (selectedDoc, idx) =>
             idx !== currentSectionIdx &&
             selectedDoc &&
-            selectedDoc.id === doctor.id,
-        ),
+            selectedDoc.id === doctor.id
+        )
     );
   };
 
@@ -108,9 +108,9 @@ const RawatJalan = () => {
       // );
       return sch.day_of_week.toLowerCase() === dayName && sch.is_active;
     });
-      // console.log(
-      //   `[STATUS_CHECK] Dr. ${doctor?.name} - Final availability for ${dayName}: ${isAvailable}`,
-      // );
+    // console.log(
+    //   `[STATUS_CHECK] Dr. ${doctor?.name} - Final availability for ${dayName}: ${isAvailable}`,
+    // );
     return isAvailable ? "available" : "not available";
   };
 
@@ -135,7 +135,7 @@ const RawatJalan = () => {
   const [now, setNow] = useState(new Date());
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedDoctorName, setSelectedDoctorName] = useState("");
-  const [appointmentDate, setAppointmentDate] = useState("");
+  const [appointmentDate, setAppointmentDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [selectedTime, setSelectedTime] = useState("");
   const [poli, setPoli] = useState("");
   const [complaint, setComplaint] = useState("");
@@ -160,7 +160,7 @@ const RawatJalan = () => {
     appointment_time: "",
     poli: "",
     complaint: "",
-    notes: ""
+    notes: "",
   });
 
   // Tambahkan fungsi untuk menutup modal view
@@ -288,7 +288,7 @@ const RawatJalan = () => {
       (app) =>
         Number(app.doctorId) === Number(doctor.id) &&
         app.date === formattedDate &&
-        app.time === time,
+        app.time === time
     );
 
     const result = { isAvailable, isBreakTime, existingAppointment };
@@ -320,7 +320,10 @@ const RawatJalan = () => {
         console.log("Detail appointment berhasil diambil:", response.data.data);
         return response.data.data;
       } else {
-        console.error("Gagal mengambil detail appointment:", response.data.message);
+        console.error(
+          "Gagal mengambil detail appointment:",
+          response.data.message
+        );
         return null;
       }
     } catch (error) {
@@ -331,10 +334,12 @@ const RawatJalan = () => {
 
   const handleSlotClick = async (slot) => {
     console.log("handleSlotClick dipanggil dengan slot:", slot);
-    
+
     if (slot.appointment) {
       setViewMode(true);
-      const appointmentDetails = await fetchAppointmentDetails(slot.appointment.appointment_code);
+      const appointmentDetails = await fetchAppointmentDetails(
+        slot.appointment.appointment_code
+      );
       if (appointmentDetails) {
         setSelectedAppointmentData(appointmentDetails);
         setShowViewModal(true);
@@ -344,59 +349,65 @@ const RawatJalan = () => {
       setViewMode(false);
       setSelectedAppointmentData(null);
       setShowViewModal(false);
-    setShowModal(true);
+      setShowModal(true);
       setModalType("new");
 
       // Set data otomatis berdasarkan slot yang diklik
-      const selectedDoctor = doctors.find(doc => doc.id === slot.doctorId);
+      const selectedDoctor = doctors.find((doc) => doc.id === slot.doctorId);
       if (selectedDoctor) {
         console.log("Doctor ditemukan:", selectedDoctor);
-        
-        // Set doctor data
+
+        // Set appointment data dengan tanggal dan waktu dari slot
+        const slotDate = format(slot.date, "yyyy-MM-dd");
+        const slotTime = slot.time;
+
+        setAppointmentDate(slotDate);
+        setSelectedTime(slotTime);
         setSelectedDoctor(selectedDoctor.id);
         setSelectedDoctorName(selectedDoctor.name);
         setPoli(selectedDoctor.poli || "umum");
 
-        // Set appointment data
-        setNewAppointment(prev => ({
+        // Set newAppointment dengan data dari slot
+        setNewAppointment((prev) => ({
           ...prev,
           doctorId: selectedDoctor.id,
           doctor: selectedDoctor.name,
-          date: format(slot.date, "yyyy-MM-dd"),
-          time: slot.time,
-      type: "Konsultasi",
-      status: "scheduled",
+          date: slotDate,
+          time: slotTime,
+          type: "Konsultasi",
+          status: "scheduled",
           poli: selectedDoctor.poli || "umum",
-      height: "",
-      weight: "",
-      heart_rate: "",
-      blood_sugar: "",
-      temperature: "",
-          complaint: ""
+          height: "",
+          weight: "",
+          heart_rate: "",
+          blood_sugar: "",
+          temperature: "",
+          complaint: "",
         }));
 
         // Set form data
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           doctor_id: selectedDoctor.id,
-          appointment_date: format(slot.date, "yyyy-MM-dd"),
-          appointment_time: slot.time,
-          poli: selectedDoctor.poli || "umum"
+          appointment_date: slotDate,
+          appointment_time: slotTime,
+          poli: selectedDoctor.poli || "umum",
         }));
 
         console.log("Form Data setelah update:", formData);
 
-        // Set selected date and time
-        setAppointmentDate(format(slot.date, "yyyy-MM-dd"));
-        setSelectedTime(slot.time);
+        // Set selected slot
         setSelectedSlot({
           time: slot.time,
           date: slot.date,
-          doctor: selectedDoctor
+          doctor: selectedDoctor,
         });
 
-    // Update available time slots
-        await updateAvailableTimeSlots(selectedDoctor.id, format(slot.date, "yyyy-MM-dd"));
+        // Update available time slots
+        await updateAvailableTimeSlots(
+          selectedDoctor.id,
+          slotDate
+        );
       } else {
         console.log("Doctor tidak ditemukan untuk ID:", slot.doctorId);
       }
@@ -409,9 +420,11 @@ const RawatJalan = () => {
     console.log("2. Show View Modal Status:", true);
     console.log("3. View Mode Status:", true);
     console.log("=================");
-    
+
     setViewMode(true);
-    const appointmentDetails = await fetchAppointmentDetails(appointment.appointment_code);
+    const appointmentDetails = await fetchAppointmentDetails(
+      appointment.appointment_code
+    );
     if (appointmentDetails) {
       setSelectedAppointmentData(appointmentDetails);
       setShowViewModal(true);
@@ -528,7 +541,7 @@ const RawatJalan = () => {
         {
           headers: { Authorization: `Bearer ${token}` },
           params: { doctor_id: doctorId },
-        },
+        }
       );
       if (response.data.status === "success") {
         const formattedSchedule = [];
@@ -545,8 +558,8 @@ const RawatJalan = () => {
         });
         setDoctors((prevDoctors) =>
           prevDoctors.map((doc) =>
-            doc.id === doctorId ? { ...doc, schedule: formattedSchedule } : doc,
-          ),
+            doc.id === doctorId ? { ...doc, schedule: formattedSchedule } : doc
+          )
         );
       }
     } catch (error) {
@@ -593,7 +606,7 @@ const RawatJalan = () => {
           patientData,
           {
             headers: { Authorization: `Bearer ${token}` },
-          },
+          }
         );
         if (patientResponse.data.status !== "success") {
           throw new Error("Failed to register patient");
@@ -638,7 +651,7 @@ const RawatJalan = () => {
       const response = await axios.post(
         `${config.apiUrl}/rm/appointments`,
         appointmentData,
-        { headers: { Authorization: `Bearer ${token}` } },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log("Create Appointment Response:", response.data);
 
@@ -699,7 +712,7 @@ const RawatJalan = () => {
         appointmentData,
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       );
 
       console.log("Update Appointment Response:", response.data);
@@ -711,7 +724,7 @@ const RawatJalan = () => {
         setEditedAppointment(null);
       } else {
         throw new Error(
-          response.data.message || "Failed to update appointment",
+          response.data.message || "Failed to update appointment"
         );
       }
     } catch (error) {
@@ -727,7 +740,7 @@ const RawatJalan = () => {
         `${config.apiUrl}/rm/appointments/${selectedAppointment.appointment_code}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       );
       await fetchAppointments();
       setShowModal(false);
@@ -744,6 +757,13 @@ const RawatJalan = () => {
     setShowModal(true);
     setModalType("new");
     setSelectedSlot(null);
+    setAppointmentDate(format(new Date(), "yyyy-MM-dd")); // Set tanggal hari ini
+    setSelectedDoctor("");
+    setSelectedDoctorName("");
+    setSelectedTime("");
+    setPoli("");
+    setComplaint("");
+    setNotes("");
     setNewAppointment({
       no_rm: "",
       nik: "",
@@ -816,13 +836,18 @@ const RawatJalan = () => {
     setSelectedAppointmentData(null);
     setSelectedDoctor("");
     setSelectedDoctorName("");
+    setAppointmentDate(format(new Date(), "yyyy-MM-dd")); // Reset ke tanggal hari ini
+    setSelectedTime("");
+    setPoli("");
+    setComplaint("");
+    setNotes("");
     setFormData({
       doctor_id: "",
-      appointment_date: "",
+      appointment_date: format(new Date(), "yyyy-MM-dd"),
       appointment_time: "",
       poli: "",
       complaint: "",
-      notes: ""
+      notes: "",
     });
     setNewAppointment({
       no_rm: "",
@@ -869,7 +894,7 @@ const RawatJalan = () => {
               </span>
             ) : (
               <span key={i}>{part}</span>
-            ),
+            )
           )}
       </span>
     );
@@ -929,28 +954,27 @@ const RawatJalan = () => {
     // Jika ada slot yang dipilih, gunakan data dari slot tersebut
     if (selectedSlot) {
       setSelectedDoctor(selectedSlot.doctor.id);
-      setAppointmentDate(selectedSlot.date);
+      setAppointmentDate(format(selectedSlot.date, "yyyy-MM-dd"));
       setSelectedTime(selectedSlot.time);
       setPoli(selectedSlot.doctor.poli || "umum");
       setNewAppointment((prev) => ({
         ...prev,
         doctorId: selectedSlot.doctor.id,
         doctor: selectedSlot.doctor.name,
-        date: selectedSlot.date,
+        date: format(selectedSlot.date, "yyyy-MM-dd"),
         time: selectedSlot.time,
         poli: selectedSlot.doctor.poli || "umum",
       }));
     } else {
       // Reset form pendaftaran jika tidak ada slot yang dipilih
       setSelectedDoctor("");
-      setAppointmentDate("");
       setSelectedTime("");
       setPoli("");
       setNewAppointment((prev) => ({
         ...prev,
         doctorId: "",
         doctor: "",
-        date: "",
+        date: appointmentDate, // Gunakan tanggal yang sudah dipilih
         time: "",
         poli: "",
       }));
@@ -965,57 +989,67 @@ const RawatJalan = () => {
     switch (field) {
       case "poli":
         setPoli(value);
-        setNewAppointment(prev => ({
+        setNewAppointment((prev) => ({
           ...prev,
-          poli: value
+          poli: value,
         }));
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          poli: value
+          poli: value,
         }));
         break;
       case "complaint":
         setComplaint(value);
-        setNewAppointment(prev => ({
+        setNewAppointment((prev) => ({
           ...prev,
-          complaint: value
+          complaint: value,
         }));
         break;
       case "notes":
         setNotes(value);
-        setNewAppointment(prev => ({
+        setNewAppointment((prev) => ({
           ...prev,
-          notes: value
+          notes: value,
         }));
         break;
       case "appointmentDate":
         setAppointmentDate(value);
-        setNewAppointment(prev => ({
+        setNewAppointment((prev) => ({
           ...prev,
-          date: value
+          date: value,
         }));
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          appointment_date: value
+          appointment_date: value,
         }));
-        // Reset waktu saat tanggal berubah
+        // Reset dokter dan waktu saat tanggal berubah
+        setSelectedDoctor("");
+        setSelectedDoctorName("");
         setSelectedTime("");
-        // Update available time slots
-        if (selectedDoctor) {
-          updateAvailableTimeSlots(selectedDoctor, value);
-        }
+        setShowDoctorSearch(false);
+        setDoctorSearchTerm("");
+        setNewAppointment((prev) => ({
+          ...prev,
+          doctorId: "",
+          doctor: "",
+          time: "",
+        }));
+        setFormData((prev) => ({
+          ...prev,
+          doctor_id: "",
+          appointment_time: "",
+        }));
         break;
       case "selectedTime":
-        // Format waktu ke format jam saja
-        const formattedTime = value + ":00";
-        setSelectedTime(formattedTime);
-        setNewAppointment(prev => ({
+        // Format waktu sudah dalam format HH:00, tidak perlu menambahkan ":00"
+        setSelectedTime(value);
+        setNewAppointment((prev) => ({
           ...prev,
-          time: formattedTime
+          time: value,
         }));
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          appointment_time: formattedTime
+          appointment_time: value,
         }));
         break;
       default:
@@ -1032,7 +1066,7 @@ const RawatJalan = () => {
         {
           headers: { Authorization: `Bearer ${token}` },
           params: { doctorId, date },
-        },
+        }
       );
 
       if (response.data.status === "success") {
@@ -1048,33 +1082,41 @@ const RawatJalan = () => {
 
   // Fungsi untuk menangani pemilihan dokter
   const handleDoctorSelect = (doctorId) => {
-    const selectedDoctor = doctors.find(doc => doc.id === doctorId);
+    const selectedDoctor = doctors.find((doc) => doc.id === doctorId);
     if (selectedDoctor) {
-    setSelectedDoctor(doctorId);
+      setSelectedDoctor(doctorId);
       setSelectedDoctorName(selectedDoctor.name);
       setPoli(selectedDoctor.poli || "umum");
 
       // Update newAppointment dengan data dokter
-      setNewAppointment(prev => ({
+      setNewAppointment((prev) => ({
         ...prev,
         doctorId: selectedDoctor.id,
         doctor: selectedDoctor.name,
-        poli: selectedDoctor.poli || "umum"
+        poli: selectedDoctor.poli || "umum",
       }));
 
       // Update form data
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         doctor_id: selectedDoctor.id,
-        poli: selectedDoctor.poli || "umum"
+        poli: selectedDoctor.poli || "umum",
       }));
 
-    // Reset waktu saat dokter berubah
-    setSelectedTime("");
-      
-    // Update available time slots jika tanggal sudah dipilih
-    if (appointmentDate) {
-      updateAvailableTimeSlots(doctorId, appointmentDate);
+      // Reset waktu saat dokter berubah
+      setSelectedTime("");
+      setNewAppointment((prev) => ({
+        ...prev,
+        time: "",
+      }));
+      setFormData((prev) => ({
+        ...prev,
+        appointment_time: "",
+      }));
+
+      // Update available time slots jika tanggal sudah dipilih
+      if (appointmentDate) {
+        updateAvailableTimeSlots(doctorId, appointmentDate);
       }
     }
   };
@@ -1105,13 +1147,13 @@ const RawatJalan = () => {
         return;
       }
 
-      if (!selectedDoctor) {
-        showErrorNotification("Silakan pilih dokter terlebih dahulu");
+      if (!appointmentDate) {
+        showErrorNotification("Silakan pilih tanggal kunjungan");
         return;
       }
 
-      if (!appointmentDate) {
-        showErrorNotification("Silakan pilih tanggal kunjungan");
+      if (!selectedDoctor) {
+        showErrorNotification("Silakan pilih dokter terlebih dahulu");
         return;
       }
 
@@ -1155,7 +1197,7 @@ const RawatJalan = () => {
     setSelectedPatient(null);
     setShowNewPatientForm(false);
     setSelectedDoctor("");
-    setAppointmentDate("");
+    setAppointmentDate(format(new Date(), "yyyy-MM-dd")); // Reset ke tanggal hari ini
     setSelectedTime("");
     setPoli("");
     setComplaint("");
@@ -1187,46 +1229,32 @@ const RawatJalan = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDoctorSearch]);
 
-  
-
   return (
     <PageTemplate>
       <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
       <div className="min-h-screen bg-gray-50">
-        {/* Modern Header with Gradient Background */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl shadow-md p-6 mb-8 text-white">
-          <div className="flex justify-between items-center">
+        {/* Modern Header with Minimalist Design */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold flex items-center">
-                <CalendarDays className="mr-3" size={28} strokeWidth={2} />
+              <h1 className="text-2xl font-bold text-gray-800 flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3 shadow-lg">
+                  <CalendarDays className="text-white" size={24} />
+                </div>
                 Jadwal Kunjungan
               </h1>
-              <p className="text-blue-100 mt-2 flex items-center">
-                <Calendar className="mr-2" size={16} />
-                {format(dateRange.start, "EEEE", { locale: id })},{" "}
-                {format(dateRange.start, "dd MMM yyyy", { locale: id })} -{" "}
-                {format(dateRange.end, "EEEE", { locale: id })},{" "}
-                {format(dateRange.end, "dd MMM yyyy", { locale: id })}
+              <p className="mt-1 text-sm text-gray-500">
+                Kelola jadwal kunjungan pasien dengan dokter yang tersedia.
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <button
-                  className={`bg-white/10 backdrop-blur-sm hover:bg-white/20 px-4 py-2.5 rounded-lg shadow-sm flex items-center gap-2 text-white transition-all duration-200 ${format(dateRange.start, "yyyy-MM-dd") === format(now, "yyyy-MM-dd") ? "ring-2 ring-white/50" : ""}`}
-                  onClick={(e) => {
-                    const datePicker =
-                      e.currentTarget.querySelector('input[type="date"]');
-                    datePicker.showPicker();
-                  }}
-                >
-                  <Calendar size={18} />
-                  <span>
-                    {format(dateRange.start, "yyyy-MM-dd") ===
-                    format(now, "yyyy-MM-dd")
-                      ? "Hari Ini, "
-                      : ""}
-                    {format(dateRange.start, "d MMM yyyy", { locale: id })}
-                  </span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
+                    <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <Calendar className="text-white" size={12} />
+                    </div>
+                  </div>
                   <input
                     type="date"
                     value={format(dateRange.start, "yyyy-MM-dd")}
@@ -1237,112 +1265,114 @@ const RawatJalan = () => {
                         end: addDays(newStart, 6),
                       });
                     }}
-                    className="absolute opacity-0 w-0 h-0"
+                    className="w-full sm:w-auto pl-9 pr-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer hover:border-gray-400 text-sm"
+                    min="2020-01-01"
+                    max="2030-12-31"
+                    title="Pilih tanggal untuk melihat jadwal"
                   />
-                </button>
+                </div>
                 <button
-                  className="bg-white/10 backdrop-blur-sm hover:bg-white/20 p-2.5 rounded-lg shadow-sm flex items-center justify-center text-white transition-all duration-200"
                   onClick={() => {
                     setDateRange({
                       start: startOfToday(),
                       end: addDays(startOfToday(), 6),
                     });
                   }}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1 ${
+                    format(dateRange.start, "yyyy-MM-dd") ===
+                    format(now, "yyyy-MM-dd")
+                      ? "bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border border-blue-200"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                  }`}
                   title="Kembali ke hari ini"
                 >
-                  <RefreshCw size={16} />
+                  <div className="w-3 h-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <Calendar size={8} className="text-white" />
+                  </div>
+                  Hari Ini
                 </button>
               </div>
               <button
                 onClick={handleAddClick}
-                className="bg-white text-blue-600 hover:bg-blue-50 px-6 py-2.5 rounded-lg font-medium shadow-sm flex items-center transition-all duration-200"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-sm"
               >
-                <Plus size={18} className="mr-1" />
-                Tambah Kunjungan
+                <div className="w-3 h-3 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Plus size={10} className="text-white" />
+                </div>
+                <span>Tambah Kunjungan</span>
               </button>
             </div>
           </div>
 
-          {/* Weekly Calendar */}
-          <div className="flex items-center justify-between mt-6 bg-white/10 backdrop-blur-sm rounded-xl p-3 overflow-x-auto">
-            {Array.from({ length: 7 }, (_, i) => {
-              const day = addDays(dateRange.start, i);
-              const isToday =
-                format(day, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
-              return (
-                <div
-                  key={i}
-                  className={`flex-shrink-0 flex flex-col items-center p-2 rounded-lg cursor-pointer transition-all duration-200 min-w-[80px] ${isToday ? "bg-white/20 shadow-md" : "hover:bg-white/10"}`}
-                  onClick={() => {
-                    setDateRange({
-                      start: day,
-                      end: addDays(day, 6),
-                    });
-                  }}
-                >
-                  <div className="text-xs text-blue-100">
-                    {format(day, "EEEE", { locale: id })}
-                  </div>
+          {/* Compact Weekly Calendar */}
+          <div className="mt-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-3 border border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-gray-700 flex items-center gap-2">
+                <div className="w-3 h-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <Calendar size={8} className="text-white" />
+                </div>
+                Kalender Mingguan
+              </h3>
+              <div className="text-xs text-gray-500">
+                {format(dateRange.start, "dd MMM yyyy", { locale: id })} -{" "}
+                {format(dateRange.end, "dd MMM yyyy", { locale: id })}
+              </div>
+            </div>
+            <div className="flex items-center justify-between overflow-x-auto gap-1">
+              {Array.from({ length: 7 }, (_, i) => {
+                const day = addDays(dateRange.start, i);
+                const isToday =
+                  format(day, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
+                return (
                   <div
-                    className={`text-xl font-bold ${isToday ? "text-white" : "text-blue-100"} mt-1`}
+                    key={i}
+                    className={`flex-shrink-0 flex flex-col items-center p-2 rounded-lg cursor-pointer transition-all duration-200 min-w-[60px] ${
+                      isToday
+                        ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md"
+                        : "bg-white hover:bg-gray-50 border border-gray-200 hover:border-blue-200"
+                    }`}
+                    onClick={() => {
+                      setDateRange({
+                        start: day,
+                        end: addDays(day, 6),
+                      });
+                    }}
                   >
-                    {format(day, "d")}
+                    <div
+                      className={`text-xs font-medium ${
+                        isToday ? "text-blue-100" : "text-gray-500"
+                      }`}
+                    >
+                      {format(day, "EEEE", { locale: id })}
+                    </div>
+                    <div
+                      className={`text-lg font-bold mt-1 ${
+                        isToday ? "text-white" : "text-gray-800"
+                      }`}
+                    >
+                      {format(day, "d")}
+                    </div>
+                    <div
+                      className={`text-xs ${
+                        isToday ? "text-blue-100" : "text-gray-400"
+                      }`}
+                    >
+                      {format(day, "MMM", { locale: id })}
+                    </div>
+                    {isToday && (
+                      <div className="h-0.5 w-3 bg-white/50 rounded-full mt-1"></div>
+                    )}
                   </div>
-                  <div className="text-xs text-blue-100">
-                    {format(day, "MMM", { locale: id })}
-                  </div>
-                  {isToday && (
-                    <div className="h-1 w-6 bg-white rounded-full mt-1"></div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
-              <div className="bg-white/20 rounded-full p-3 mr-3">
-                <User size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-blue-100">Total Pasien</div>
-                <div className="text-2xl font-bold">{appointments.length}</div>
-              </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
-              <div className="bg-white/20 rounded-full p-3 mr-3">
-                <Stethoscope size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-blue-100">Dokter Aktif</div>
-                <div className="text-2xl font-bold">
-                  {selectedDoctors.filter((d) => d !== null).length}
-                </div>
-              </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
-              <div className="bg-white/20 rounded-full p-3 mr-3">
-                <Clock size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-blue-100">Kunjungan Hari Ini</div>
-                <div className="text-2xl font-bold">
-                  {
-                    appointments.filter(
-                      (apt) => apt.date === format(new Date(), "yyyy-MM-dd"),
-                    ).length
-                  }
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="min-w-[700px] grid grid-cols-[80px_repeat(3,1fr)] border-b border-gray-100">
-            <div className="p-4 border-r border-gray-100 bg-gray-50 flex items-center justify-center">
-              <div className="text-gray-500 font-medium text-sm">
+          <div className="min-w-[700px] grid grid-cols-[70px_repeat(3,1fr)] border-b border-gray-100">
+            <div className="p-3 border-r border-gray-100 bg-gray-50 flex items-center justify-center">
+              <div className="text-gray-500 font-medium text-xs">
                 GMT +07:00
               </div>
             </div>
@@ -1352,14 +1382,16 @@ const RawatJalan = () => {
                 ? appointments.filter(
                     (apt) =>
                       Number(apt.doctorId) === Number(doctor.id) &&
-                      apt.date === format(dateRange.start, "yyyy-MM-dd"),
+                      apt.date === format(dateRange.start, "yyyy-MM-dd")
                   ).length || 0
                 : 0;
 
               return (
                 <div
                   key={sectionIdx}
-                  className={`${sectionIdx !== 2 ? "border-r border-gray-100" : ""}`}
+                  className={`${
+                    sectionIdx !== 2 ? "border-r border-gray-100" : ""
+                  }`}
                 >
                   <div className="relative">
                     <button
@@ -1367,42 +1399,53 @@ const RawatJalan = () => {
                         setSelectedSection(sectionIdx);
                         setShowDoctorModal(!showDoctorModal);
                       }}
-                      className={`w-full p-5 ${doctor ? "bg-white hover:bg-blue-50/30" : "bg-gray-50/50 hover:bg-gray-100/50"} transition-all duration-200`}
+                      className={`w-full p-3 ${
+                        doctor
+                          ? "bg-white hover:bg-blue-50/30"
+                          : "bg-gray-50/50 hover:bg-gray-100/50"
+                      } transition-all duration-200`}
                     >
                       {doctor ? (
-                        <div className="flex items-start gap-4">
-                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-medium text-xl shrink-0 shadow-md">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-medium text-lg shrink-0 shadow-md">
                             {doctor.name.charAt(0)}
                           </div>
                           <div className="flex flex-col items-start flex-1 text-left">
-                            <span className="font-semibold text-gray-800 text-lg">
+                            <span className="font-semibold text-gray-800 text-sm">
                               Dr. {doctor.name}
                             </span>
-                            <span className="text-sm text-gray-500 bg-blue-50 px-2 py-0.5 rounded-full mt-1">
+                            <span className="text-xs text-gray-500 bg-blue-50 px-1.5 py-0.5 rounded-full mt-1">
                               {doctor.specialization || "Spesialis Umum"}
                             </span>
-                            <div className="flex items-center mt-2">
-                              <div className="flex items-center text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
-                                <Calendar size={14} className="mr-1" />
+                            <div className="flex items-center mt-1.5">
+                              <div className="flex items-center text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-lg">
+                                <Calendar size={10} className="mr-1" />
                                 <span>
                                   {appointmentCount}{" "}
                                   {appointmentCount === 1 ? "Pasien" : "Pasien"}
                                 </span>
                               </div>
                               <div
-                                className={`ml-2 text-xs px-2 py-1 rounded-lg flex items-center ${getDoctorStatusOnDate(doctor, dateRange.start) === "available" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}
+                                className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-lg flex items-center ${
+                                  getDoctorStatusOnDate(
+                                    doctor,
+                                    dateRange.start
+                                  ) === "available"
+                                    ? "bg-green-50 text-green-600"
+                                    : "bg-red-50 text-red-500"
+                                }`}
                               >
                                 {getDoctorStatusOnDate(
                                   doctor,
-                                  dateRange.start,
+                                  dateRange.start
                                 ) === "available" ? (
                                   <>
-                                    <CheckCircle size={12} className="mr-1" />{" "}
+                                    <CheckCircle size={8} className="mr-0.5" />{" "}
                                     Tersedia
                                   </>
                                 ) : (
                                   <>
-                                    <AlertCircle size={12} className="mr-1" />{" "}
+                                    <AlertCircle size={8} className="mr-0.5" />{" "}
                                     Tidak Tersedia
                                   </>
                                 )}
@@ -1416,17 +1459,19 @@ const RawatJalan = () => {
                               newDoctors[sectionIdx] = null;
                               setSelectedDoctors(newDoctors);
                             }}
-                            className="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-gray-100 transition-all duration-200"
+                            className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100 transition-all duration-200"
                           >
-                            <X size={18} />
+                            <X size={14} />
                           </div>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center gap-3 text-gray-400 justify-center py-4 hover:text-blue-500 transition-all duration-200">
-                          <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
-                            <Plus size={24} />
+                        <div className="flex flex-col items-center gap-2 text-gray-400 justify-center py-2 hover:text-blue-500 transition-all duration-200">
+                          <div className="w-10 h-10 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
+                            <Plus size={18} />
                           </div>
-                          <span className="font-medium">Pilih Dokter</span>
+                          <span className="font-medium text-xs">
+                            Pilih Dokter
+                          </span>
                         </div>
                       )}
                     </button>
@@ -1460,7 +1505,7 @@ const RawatJalan = () => {
                                 availableDoctorsForSection.filter((d) =>
                                   d.name
                                     .toLowerCase()
-                                    .includes(doctorSearchTerm.toLowerCase()),
+                                    .includes(doctorSearchTerm.toLowerCase())
                                 );
                             }
 
@@ -1468,11 +1513,11 @@ const RawatJalan = () => {
                             doctorsToDisplay.sort((a, b) => {
                               const statusA = getDoctorStatusOnDate(
                                 a,
-                                dateRange.start,
+                                dateRange.start
                               );
                               const statusB = getDoctorStatusOnDate(
                                 b,
-                                dateRange.start,
+                                dateRange.start
                               );
                               if (
                                 statusA === "available" &&
@@ -1518,7 +1563,7 @@ const RawatJalan = () => {
                                     onClick={() => {
                                       handleSelectDoctor(
                                         doc.id,
-                                        selectedSection,
+                                        selectedSection
                                       );
                                       setShowDoctorModal(false);
                                       setDoctorSearchTerm("");
@@ -1534,11 +1579,18 @@ const RawatJalan = () => {
                                       </div>
                                     </div>
                                     <div
-                                      className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center ${getDoctorStatusOnDate(doc, dateRange.start) === "available" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}
+                                      className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center ${
+                                        getDoctorStatusOnDate(
+                                          doc,
+                                          dateRange.start
+                                        ) === "available"
+                                          ? "bg-green-50 text-green-600"
+                                          : "bg-red-50 text-red-500"
+                                      }`}
                                     >
                                       {getDoctorStatusOnDate(
                                         doc,
-                                        dateRange.start,
+                                        dateRange.start
                                       ) === "available" ? (
                                         <>
                                           <CheckCircle
@@ -1571,7 +1623,7 @@ const RawatJalan = () => {
             })}
           </div>
 
-          <div className="grid grid-cols-[80px_repeat(3,1fr)] relative">
+          <div className="grid grid-cols-[70px_repeat(3,1fr)] relative">
             <div className="border-r border-gray-100 bg-gray-50 relative">
               {timeSlots.map((slot, idx) => {
                 const isCurrentHour =
@@ -1582,18 +1634,22 @@ const RawatJalan = () => {
                 return (
                   <div
                     key={idx}
-                    className={`h-24 border-b border-gray-100 flex items-center justify-center text-gray-500 font-medium relative ${isCurrentHour ? "bg-blue-50" : ""}`}
+                    className={`h-20 border-b border-gray-100 flex items-center justify-center text-gray-500 font-medium relative ${
+                      isCurrentHour ? "bg-blue-50" : ""
+                    }`}
                   >
                     <div
-                      className={`flex items-center ${isCurrentHour ? "text-blue-600 font-bold" : ""}`}
+                      className={`flex items-center ${
+                        isCurrentHour ? "text-blue-600 font-bold" : ""
+                      }`}
                     >
                       {isCurrentHour && (
                         <div className="relative mr-2">
                           <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75"></div>
-                          <div className="relative h-3 w-3 bg-blue-500 rounded-full"></div>
+                          <div className="relative h-2 w-2 bg-blue-500 rounded-full"></div>
                         </div>
                       )}
-                      {slot.time}
+                      <span className="text-sm">{slot.time}</span>
                     </div>
 
                     {/* Current time indicator */}
@@ -1611,8 +1667,8 @@ const RawatJalan = () => {
                           <div className="flex items-center">
                             <div className="relative">
                               <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75"></div>
-                              <div className="relative h-4 w-4 bg-blue-500 rounded-full shadow-md flex items-center justify-center">
-                                <Clock size={10} className="text-white" />
+                              <div className="relative h-3 w-3 bg-blue-500 rounded-full shadow-md flex items-center justify-center">
+                                <Clock size={8} className="text-white" />
                               </div>
                             </div>
                           </div>
@@ -1628,7 +1684,9 @@ const RawatJalan = () => {
               return (
                 <div
                   key={sectionIdx}
-                  className={`${sectionIdx !== 2 ? "border-r border-gray-100" : ""}`}
+                  className={`${
+                    sectionIdx !== 2 ? "border-r border-gray-100" : ""
+                  }`}
                 >
                   {timeSlots.map((slot, timeIdx) => {
                     const { isAvailable, isBreakTime, existingAppointment } =
@@ -1637,16 +1695,16 @@ const RawatJalan = () => {
                     return (
                       <div
                         key={timeIdx}
-                        className={`h-24 border-b border-gray-100 relative ${
+                        className={`h-20 border-b border-gray-100 relative ${
                           !doctor
                             ? "bg-gray-50/30"
                             : isBreakTime
-                              ? "bg-amber-50/50"
-                              : !isAvailable
-                                ? "bg-gray-100/70"
-                                : !existingAppointment
-                                  ? "group hover:bg-blue-50 transition-colors duration-200"
-                                  : ""
+                            ? "bg-amber-50/50"
+                            : !isAvailable
+                            ? "bg-gray-100/70"
+                            : !existingAppointment
+                            ? "group hover:bg-blue-50 transition-colors duration-200"
+                            : ""
                         } ${
                           format(dateRange.start, "yyyy-MM-dd") ===
                             format(now, "yyyy-MM-dd") &&
@@ -1655,45 +1713,12 @@ const RawatJalan = () => {
                             : ""
                         }`}
                       >
-                        {/* Current time indicator for doctor slots */}
-                        {/* {format(dateRange.start, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd') && 
-                         slot.time <= format(now, 'HH:mm') && 
-                         parseInt(slot.time.split(':')[0]) + 1 > parseInt(format(now, 'HH')) && (
-                          <div className="absolute z-40" style={{
-                            top: `${((parseInt(format(now, 'mm')) / 60) * 100)}%`,
-                            right: '8px'
-                          }}>
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75"></div>
-                              <div className="relative h-3 w-3 bg-blue-500 rounded-full shadow-md"></div>
-                            </div>
-                          </div>
-                        )} */}
-
-                        {/* Current time indicator */}
-                        {/* {format(dateRange.start, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd') && 
-                         slot.time <= format(now, 'HH:mm') && 
-                         parseInt(slot.time.split(':')[0]) + 1 > parseInt(format(now, 'HH')) && (
-                          <div className="absolute left-0 right-0 z-40" style={{
-                            top: `${((parseInt(format(now, 'mm')) / 60) * 100)}%`,
-                          }}>
-                            <div className="flex items-center">
-                              <div className="h-5 w-5 rounded-full bg-red-500 shadow-lg flex items-center justify-center text-white -ml-2.5">
-                                <Clock size={12} />
-                              </div>
-                              <div className="h-0.5 w-full bg-red-500 shadow-sm"></div>
-                              <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-md shadow-md -mr-1">
-                                {format(now, 'HH:mm')}
-                              </div>
-                            </div>
-                          </div>
-                        )} */}
                         {isBreakTime && (
                           <div className="absolute inset-0 flex items-center justify-center z-30">
                             <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#fef3c7_10px,#fef3c7_20px)] opacity-30"></div>
-                            <div className="bg-amber-100 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-lg z-40 shadow-sm flex items-center">
-                              <Coffee size={14} className="mr-1.5" />
-                              <span className="font-medium">BREAK TIME</span>
+                            <div className="bg-amber-100 border border-amber-200 text-amber-700 px-2 py-1 rounded-lg z-40 shadow-sm flex items-center">
+                              <Coffee size={12} className="mr-1" />
+                              <span className="font-medium text-xs">BREAK</span>
                             </div>
                           </div>
                         )}
@@ -1701,9 +1726,11 @@ const RawatJalan = () => {
                         {!isBreakTime && !isAvailable && (
                           <div className="absolute inset-0 flex items-center justify-center z-20">
                             <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#f3f4f6_10px,#f3f4f6_20px)] opacity-30"></div>
-                            <div className="bg-gray-100 border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg z-30 shadow-sm flex items-center">
-                              <AlertCircle size={14} className="mr-1.5" />
-                              <span className="font-medium">NOT AVAILABLE</span>
+                            <div className="bg-gray-100 border border-gray-200 text-gray-500 px-2 py-1 rounded-lg z-30 shadow-sm flex items-center">
+                              <AlertCircle size={12} className="mr-1" />
+                              <span className="font-medium text-xs">
+                                UNAVAILABLE
+                              </span>
                             </div>
                           </div>
                         )}
@@ -1713,19 +1740,19 @@ const RawatJalan = () => {
                             onClick={() =>
                               handleAppointmentClick(existingAppointment)
                             }
-                            className="absolute inset-0 z-10 p-3 text-left transition-transform duration-200 hover:scale-[1.02] focus:scale-[1.02] focus:outline-none"
+                            className="absolute inset-0 z-10 p-2 text-left transition-transform duration-200 hover:scale-[1.02] focus:scale-[1.02] focus:outline-none"
                           >
-                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-3 h-full flex flex-col text-white shadow-md">
+                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-2 h-full flex flex-col text-white shadow-md">
                               <div className="flex justify-between items-start">
-                                <span className="font-medium truncate text-base">
+                                <span className="font-medium truncate text-sm">
                                   {existingAppointment.patientName}
                                 </span>
-                                <span className="bg-white/20 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full">
+                                <span className="bg-white/20 backdrop-blur-sm text-white text-xs px-1 py-0.5 rounded-full">
                                   {existingAppointment.type}
                                 </span>
                               </div>
                               <div className="mt-auto flex items-center text-xs text-blue-100">
-                                <Clock size={12} className="mr-1" />
+                                <Clock size={10} className="mr-1" />
                                 <span>{slot.time}</span>
                               </div>
                             </div>
@@ -1742,16 +1769,16 @@ const RawatJalan = () => {
                                   time: slot.time,
                                   date: dateRange.start,
                                   doctorId: doctor.id,
-                                  doctor: doctor
+                                  doctor: doctor,
                                 })
                               }
-                              className="absolute inset-0 z-10 flex items-center justify-center p-3"
+                              className="absolute inset-0 z-10 flex items-center justify-center p-2"
                             >
-                              <div className="border-2 border-dashed border-blue-200 rounded-lg w-full h-full flex items-center justify-center group-hover:border-blue-400 group-hover:bg-blue-50/50 transition-all duration-200">
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform group-hover:scale-105 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
-                                  <Plus size={16} />
-                                  <span className="font-medium">
-                                    Tambah Kunjungan
+                              <div className="border-2 border-dashed border-blue-200 rounded-lg w-full h-full flex items-center justify-center bg-blue-50/30 hover:bg-blue-50/50 transition-all duration-200">
+                                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-lg shadow-md flex items-center gap-1">
+                                  <Plus size={12} />
+                                  <span className="font-medium text-xs">
+                                    Tambah
                                   </span>
                                 </div>
                               </div>
@@ -1778,8 +1805,12 @@ const RawatJalan = () => {
                   <FileText size={22} className="text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-800">Detail Kunjungan</h2>
-                  <p className="text-sm text-gray-500 mt-0.5">Lihat detail kunjungan pasien</p>
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Detail Kunjungan
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Lihat detail kunjungan pasien
+                  </p>
                 </div>
               </div>
               <button
@@ -1802,39 +1833,57 @@ const RawatJalan = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Nama Lengkap</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.patient_name}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.patient_name}
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">No. RM</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.patient_no_rm}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.patient_no_rm}
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">NIK</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.nik}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.nik}
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Tanggal Lahir</p>
                       <p className="font-medium text-gray-900">
-                        {format(new Date(selectedAppointmentData.tanggal_lahir), "dd MMM yyyy", {
-                          locale: id,
-                        })}
+                        {format(
+                          new Date(selectedAppointmentData.tanggal_lahir),
+                          "dd MMM yyyy",
+                          {
+                            locale: id,
+                          }
+                        )}
                       </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Jenis Kelamin</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.jenis_kelamin}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.jenis_kelamin}
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Alamat</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.alamat}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.alamat}
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">No. Telepon</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.phone}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.phone}
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Email</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.email}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.email}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1842,31 +1891,72 @@ const RawatJalan = () => {
                 {/* Visit Info */}
                 <div className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-shadow">
                   <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                    <Calendar size={18} className="text-blue-600" />
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+                      <Calendar size={18} className="text-white" />
+                    </div>
                     Informasi Kunjungan
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-3 rounded-lg col-span-2">
+                      <p className="text-sm text-gray-500">Status</p>
+                      <p className="font-medium text-gray-900">
+                        <span
+                          className={`px-3 py-1 text-xs font-bold rounded-full capitalize ${
+                            selectedAppointmentData.status === "scheduled"
+                              ? "bg-blue-100 text-blue-800"
+                              : selectedAppointmentData.status === "confirmed"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : selectedAppointmentData.status === "checked-in"
+                              ? "bg-indigo-100 text-indigo-800"
+                              : selectedAppointmentData.status === "examined"
+                              ? "bg-purple-100 text-purple-800"
+                              : selectedAppointmentData.status === "dispensed"
+                              ? "bg-cyan-100 text-cyan-800"
+                              : selectedAppointmentData.status === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : selectedAppointmentData.status === "cancelled"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {selectedAppointmentData.status}
+                        </span>
+                      </p>
+                    </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Tanggal</p>
                       <p className="font-medium text-gray-900">
-                        {format(new Date(selectedAppointmentData.appointment_date), "dd MMM yyyy", {
-                          locale: id,
-                        })}
+                        {format(
+                          new Date(selectedAppointmentData.appointment_date),
+                          "dd MMM yyyy",
+                          {
+                            locale: id,
+                          }
+                        )}
                       </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Waktu</p>
                       <p className="font-medium text-gray-900">
-                        {format(new Date(`2000-01-01T${selectedAppointmentData.appointment_time}`), "HH:mm")}
+                        {format(
+                          new Date(
+                            `2000-01-01T${selectedAppointmentData.appointment_time}`
+                          ),
+                          "HH:mm"
+                        )}
                       </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Dokter</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.doctor}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.doctor}
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Poli</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.poli}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.poli}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1880,23 +1970,33 @@ const RawatJalan = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Tinggi Badan</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.height} cm</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.height} cm
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Berat Badan</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.weight} kg</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.weight} kg
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Detak Jantung</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.heart_rate} bpm</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.heart_rate} bpm
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Gula Darah</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.blood_sugar} mg/dL</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.blood_sugar} mg/dL
+                      </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Suhu Tubuh</p>
-                      <p className="font-medium text-gray-900">{selectedAppointmentData.temperature} °C</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedAppointmentData.temperature} °C
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1908,7 +2008,9 @@ const RawatJalan = () => {
                     Keluhan
                   </h3>
                   <div className="bg-white p-4 rounded-lg">
-                    <p className="text-gray-700">{selectedAppointmentData.complaint}</p>
+                    <p className="text-gray-700">
+                      {selectedAppointmentData.complaint}
+                    </p>
                   </div>
                 </div>
 
@@ -1919,7 +2021,9 @@ const RawatJalan = () => {
                     Catatan
                   </h3>
                   <div className="bg-white p-4 rounded-lg">
-                    <p className="text-gray-700">{selectedAppointmentData.notes || "-"}</p>
+                    <p className="text-gray-700">
+                      {selectedAppointmentData.notes || "-"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2315,7 +2419,30 @@ const RawatJalan = () => {
                 <div className="space-y-6">
                   {/* Appointment Details */}
                   <div className="space-y-4">
-                    {/* Dokter Section */}
+                    {/* Tanggal Section - Urutan Pertama */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 items-center gap-1">
+                        <Calendar size={14} className="text-gray-400" />
+                        Tanggal Kunjungan
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={appointmentDate}
+                          onChange={(e) =>
+                            handleInputChange(e, "appointmentDate")
+                          }
+                          min={format(startOfToday(), "yyyy-MM-dd")}
+                          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                        />
+                        <Calendar
+                          size={16}
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Dokter Section - Urutan Kedua */}
                     <div className="doctor-search-container">
                       <label className="block text-sm font-medium text-gray-700 mb-1 items-center gap-1">
                         <Stethoscope size={14} className="text-gray-400" />
@@ -2323,55 +2450,62 @@ const RawatJalan = () => {
                       </label>
                       <div className="relative">
                         {!selectedDoctor ? (
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Cari dokter berdasarkan nama atau spesialisasi..."
-                            value={doctorSearchTerm}
-                            onChange={(e) => {
-                              setDoctorSearchTerm(e.target.value);
-                              setShowDoctorSearch(true);
-                            }}
-                            onFocus={() => setShowDoctorSearch(true)}
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-                          />
-                          <Search
-                            size={16}
-                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                          />
-                          {doctorSearchTerm && (
-                            <button
-                              onClick={() => {
-                                setDoctorSearchTerm("");
-                                setShowDoctorSearch(false);
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder={appointmentDate ? "Cari dokter berdasarkan nama atau spesialisasi..." : "Pilih tanggal terlebih dahulu"}
+                              value={doctorSearchTerm}
+                              onChange={(e) => {
+                                setDoctorSearchTerm(e.target.value);
+                                setShowDoctorSearch(true);
                               }}
-                              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              <X size={14} className="text-gray-400" />
-                            </button>
-                          )}
-                        </div>
+                              onFocus={() => {
+                                if (appointmentDate) {
+                                  setShowDoctorSearch(true);
+                                }
+                              }}
+                              disabled={!appointmentDate}
+                              className={`w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500 ${!appointmentDate ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                            />
+                            <Search
+                              size={16}
+                              className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${!appointmentDate ? 'text-gray-300' : 'text-gray-400'}`}
+                            />
+                            {doctorSearchTerm && appointmentDate && (
+                              <button
+                                onClick={() => {
+                                  setDoctorSearchTerm("");
+                                  setShowDoctorSearch(false);
+                                }}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                              >
+                                <X size={14} className="text-gray-400" />
+                              </button>
+                            )}
+                          </div>
                         ) : null}
 
                         {showDoctorSearch &&
                           doctorSearchTerm &&
-                          !selectedDoctor && (
+                          !selectedDoctor &&
+                          appointmentDate && (
                             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-gray-100 shadow-xl z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
                               <div className="p-2">
                                 {(() => {
                                   const filteredDoctors = doctors.filter(
                                     (doc) =>
-                                      doc.name
+                                      (doc.name
                                         .toLowerCase()
                                         .includes(
-                                          doctorSearchTerm.toLowerCase(),
+                                          doctorSearchTerm.toLowerCase()
                                         ) ||
                                       (doc.specialization &&
                                         doc.specialization
                                           .toLowerCase()
                                           .includes(
-                                            doctorSearchTerm.toLowerCase(),
-                                          )),
+                                            doctorSearchTerm.toLowerCase()
+                                          ))) &&
+                                      getDoctorStatusOnDate(doc, appointmentDate) === "available"
                                   );
 
                                   if (filteredDoctors.length === 0) {
@@ -2382,10 +2516,10 @@ const RawatJalan = () => {
                                           className="mx-auto mb-2 text-gray-300"
                                         />
                                         <p className="text-sm">
-                                          Tidak ada dokter ditemukan
+                                          Tidak ada dokter tersedia pada tanggal ini
                                         </p>
                                         <p className="text-xs text-gray-400 mt-1">
-                                          Coba kata kunci lain
+                                          Coba kata kunci lain atau tanggal berbeda
                                         </p>
                                       </div>
                                     );
@@ -2426,35 +2560,13 @@ const RawatJalan = () => {
                                                   {doc.poli || "Poli Umum"}
                                                 </div>
                                                 <div
-                                                  className={`flex items-center text-xs px-2 py-0.5 rounded-full ${
-                                                    getDoctorStatusOnDate(
-                                                      doc,
-                                                      dateRange.start,
-                                                    ) === "available"
-                                                      ? "bg-green-50 text-green-600"
-                                                      : "bg-red-50 text-red-500"
-                                                  }`}
+                                                  className="flex items-center text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600"
                                                 >
-                                                  {getDoctorStatusOnDate(
-                                                    doc,
-                                                    dateRange.start,
-                                                  ) === "available" ? (
-                                                    <>
-                                                      <CheckCircle
-                                                        size={12}
-                                                        className="mr-1"
-                                                      />
-                                                      Tersedia
-                                                    </>
-                                                  ) : (
-                                                    <>
-                                                      <AlertCircle
-                                                        size={12}
-                                                        className="mr-1"
-                                                      />
-                                                      Tidak Tersedia
-                                                    </>
-                                                  )}
+                                                  <CheckCircle
+                                                    size={12}
+                                                    className="mr-1"
+                                                  />
+                                                  Tersedia
                                                 </div>
                                               </div>
                                             </div>
@@ -2482,13 +2594,13 @@ const RawatJalan = () => {
                                     Dr.{" "}
                                     {
                                       doctors.find(
-                                        (d) => d.id === selectedDoctor,
+                                        (d) => d.id === selectedDoctor
                                       )?.name
                                     }
                                   </h4>
                                   <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-600 rounded-full">
                                     {doctors.find(
-                                      (d) => d.id === selectedDoctor,
+                                      (d) => d.id === selectedDoctor
                                     )?.specialization || "Spesialis Umum"}
                                   </span>
                                 </div>
@@ -2496,43 +2608,17 @@ const RawatJalan = () => {
                                   <div className="flex items-center text-xs text-gray-500">
                                     <Building2 size={12} className="mr-1" />
                                     {doctors.find(
-                                      (d) => d.id === selectedDoctor,
+                                      (d) => d.id === selectedDoctor
                                     )?.poli || "Poli Umum"}
                                   </div>
                                   <div
-                                    className={`flex items-center text-xs px-2 py-0.5 rounded-full ${
-                                      getDoctorStatusOnDate(
-                                        doctors.find(
-                                          (d) => d.id === selectedDoctor,
-                                        ),
-                                        dateRange.start,
-                                      ) === "available"
-                                        ? "bg-green-50 text-green-600"
-                                        : "bg-red-50 text-red-500"
-                                    }`}
+                                    className="flex items-center text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600"
                                   >
-                                    {getDoctorStatusOnDate(
-                                      doctors.find(
-                                        (d) => d.id === selectedDoctor,
-                                      ),
-                                      dateRange.start,
-                                    ) === "available" ? (
-                                      <>
-                                        <CheckCircle
-                                          size={12}
-                                          className="mr-1"
-                                        />
-                                        Tersedia
-                                      </>
-                                    ) : (
-                                      <>
-                                        <AlertCircle
-                                          size={12}
-                                          className="mr-1"
-                                        />
-                                        Tidak Tersedia
-                                      </>
-                                    )}
+                                    <CheckCircle
+                                      size={12}
+                                      className="mr-1"
+                                    />
+                                    Tersedia
                                   </div>
                                 </div>
                               </div>
@@ -2552,56 +2638,116 @@ const RawatJalan = () => {
                       </div>
                     </div>
 
-                    {/* Tanggal & Waktu Section */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 items-center gap-1">
-                          <Calendar size={14} className="text-gray-400" />
-                          Tanggal Kunjungan
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="date"
-                            value={appointmentDate}
-                            onChange={(e) =>
-                              handleInputChange(e, "appointmentDate")
-                            }
-                            min={format(startOfToday(), "yyyy-MM-dd")}
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-                          />
-                          <Calendar
-                            size={16}
-                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                          />
+                    {/* Waktu Section - Urutan Ketiga */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 items-center gap-1">
+                        <Clock size={14} className="text-gray-400" />
+                        Waktu Kunjungan
+                      </label>
+                      {!selectedDoctor ? (
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 text-center">
+                          <Clock size={20} className="text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">Pilih dokter terlebih dahulu</p>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap gap-2">
+                            {(() => {
+                              const selectedDoctorData = doctors.find(d => d.id === selectedDoctor);
+                              if (!selectedDoctorData || !selectedDoctorData.schedule) {
+                                return (
+                                  <div className="text-sm text-gray-500">
+                                    Tidak ada jadwal tersedia untuk dokter ini
+                                  </div>
+                                );
+                              }
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 items-center gap-1">
-                          <Clock size={14} className="text-gray-400" />
-                          Waktu Kunjungan
-                        </label>
-                        <div className="relative">
-                          <select
-                            value={selectedTime}
-                            onChange={(e) =>
-                              handleInputChange(e, "selectedTime")
-                            }
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-                          >
-                            <option value="">Pilih Waktu</option>
-                            {timeSlots.map((slot) => (
-                              <option key={slot.time} value={slot.time}>
-                                {slot.label}
-                              </option>
-                            ))}
-                          </select>
-                          <Clock
-                            size={16}
-                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                          />
+                              // Filter jadwal berdasarkan tanggal yang dipilih
+                              const dayName = format(new Date(appointmentDate), "EEEE", { locale: enUS }).toLowerCase();
+                              const availableSchedules = selectedDoctorData.schedule.filter(sch => 
+                                sch.day_of_week.toLowerCase() === dayName && sch.is_active
+                              );
+
+                              if (availableSchedules.length === 0) {
+                                return (
+                                  <div className="text-sm text-gray-500">
+                                    Dokter tidak tersedia pada tanggal ini
+                                  </div>
+                                );
+                              }
+
+                              // Generate time slots berdasarkan jadwal dokter
+                              const timeSlotsForDoctor = [];
+                              availableSchedules.forEach(schedule => {
+                                if (schedule.start_time && schedule.end_time) {
+                                  const startHour = parseInt(schedule.start_time.split(':')[0]);
+                                  const endHour = parseInt(schedule.end_time.split(':')[0]);
+                                  
+                                  for (let hour = startHour; hour < endHour; hour++) {
+                                    const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+                                    // Skip break time (12:00)
+                                    if (timeSlot !== '12:00') {
+                                      timeSlotsForDoctor.push(timeSlot);
+                                    }
+                                  }
+                                }
+                              });
+
+                              // Remove duplicates and sort
+                              const uniqueTimeSlots = [...new Set(timeSlotsForDoctor)].sort();
+
+                              if (uniqueTimeSlots.length === 0) {
+                                return (
+                                  <div className="text-sm text-gray-500">
+                                    Tidak ada slot waktu tersedia
+                                  </div>
+                                );
+                              }
+
+                              return uniqueTimeSlots.map((timeSlot) => {
+                                const isSelected = selectedTime === timeSlot;
+                                const isBooked = appointments.some(apt => 
+                                  Number(apt.doctorId) === Number(selectedDoctor) &&
+                                  apt.date === appointmentDate &&
+                                  apt.time === timeSlot
+                                );
+
+                                return (
+                                  <button
+                                    key={timeSlot}
+                                    onClick={() => handleInputChange({ target: { value: timeSlot } }, "selectedTime")}
+                                    disabled={isBooked}
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                                      isSelected
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : isBooked
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                    }`}
+                                  >
+                                    <Clock size={14} />
+                                    {timeSlot}
+                                    {isBooked && (
+                                      <XCircle size={14} className="text-gray-400" />
+                                    )}
+                                  </button>
+                                );
+                              });
+                            })()}
+                          </div>
+                          
+                          {selectedTime && (
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle size={16} className="text-blue-600" />
+                                <span className="text-sm font-medium text-blue-800">
+                                  Waktu dipilih: {selectedTime}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Vitals Section */}
@@ -2611,10 +2757,10 @@ const RawatJalan = () => {
                         Data Vital
                       </h3>
                       <div className="grid grid-cols-2 gap-4">
-                    <div>
+                        <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Tinggi Badan (cm)
-                      </label>
+                          </label>
                           <input
                             type="number"
                             value={newAppointment.height}

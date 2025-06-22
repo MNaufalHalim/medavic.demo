@@ -3,20 +3,15 @@ const { pool } = require('../config/db');
 const doctorController = {
   getAllDoctors: async (req, res) => {
     try {
-      // Ambil semua dokter
+      // Ambil semua dokter beserta poli (LEFT JOIN polyclinic)
       const [doctors] = await pool.query(`
         SELECT 
-          id,
-          name,
-          specialization,
-          phone_number,
-          email,
-          status,
-          created_at,
-          updated_at
-        FROM doctors
-        WHERE delt_flg = 'N'
-        ORDER BY name
+          d.id, d.name, d.license_no, d.specialization, d.phone_number, d.email, d.status, d.delt_flg, d.created_at, d.updated_at, d.poli,
+          p.name AS poli_name
+        FROM doctors d
+        LEFT JOIN polyclinic p ON d.poli = p.id
+        WHERE d.delt_flg = 'N'
+        ORDER BY d.name
       `);
   
       // Ambil jadwal hari untuk semua dokter
@@ -57,11 +52,11 @@ const doctorController = {
 
   createDoctor: async (req, res) => {
     try {
-      const { name, specialization, phone_number, email, schedule, status } = req.body;
+      const { name, specialization, phone_number, email, schedule, status, poli } = req.body;
 
       const [result] = await pool.query(
-        'INSERT INTO doctors (name, specialization, phone_number, email, schedule, status) VALUES (?, ?, ?, ?, ?, ?)',
-        [name, specialization, phone_number, email, schedule, status]
+        'INSERT INTO doctors (name, specialization, phone_number, email, schedule, status, poli) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, specialization, phone_number, email, schedule, status, poli || null]
       );
 
       res.status(201).json({
@@ -83,12 +78,12 @@ const doctorController = {
     try {
       await connection.beginTransaction();
       const { id } = req.params;
-      const { name, specialization, phone_number, email, status, schedule = [] } = req.body;
+      const { name, specialization, phone_number, email, status, schedule = [], poli } = req.body;
 
       // 1. Update doctor's details
       await connection.query(
-        'UPDATE doctors SET name = ?, specialization = ?, phone_number = ?, email = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [name, specialization, phone_number, email, status, id]
+        'UPDATE doctors SET name = ?, specialization = ?, phone_number = ?, email = ?, status = ?, poli = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, specialization, phone_number, email, status, poli || null, id]
       );
 
       // 2. Delete all existing schedules for this doctor
@@ -523,9 +518,138 @@ const medicineController = {
   },
 };
 
+const serviceController = {
+  getAllServices: async (req, res) => {
+    try {
+      const [services] = await pool.query(`
+        SELECT id, name, price, delt_flg FROM services WHERE delt_flg = 'N' ORDER BY id
+      `);
+      res.json({ status: 'success', data: services });
+    } catch (error) {
+      console.error('Error in getAllServices:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal mengambil data tindakan' });
+    }
+  },
+  createService: async (req, res) => {
+    try {
+      const { name, price } = req.body;
+      if (!name || price === undefined) {
+        return res.status(400).json({ status: 'error', message: 'Nama dan harga wajib diisi' });
+      }
+      const [result] = await pool.query(
+        'INSERT INTO services (name, price, delt_flg) VALUES (?, ?, "N")',
+        [name, price]
+      );
+      res.status(201).json({ status: 'success', message: 'Tindakan berhasil ditambahkan', data: { id: result.insertId } });
+    } catch (error) {
+      console.error('Error in createService:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal menambah tindakan' });
+    }
+  },
+  updateService: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, price } = req.body;
+      if (!name || price === undefined) {
+        return res.status(400).json({ status: 'error', message: 'Nama dan harga wajib diisi' });
+      }
+      const [result] = await pool.query(
+        'UPDATE services SET name = ?, price = ? WHERE id = ? AND delt_flg = "N"',
+        [name, price, id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Tindakan tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Tindakan berhasil diperbarui' });
+    } catch (error) {
+      console.error('Error in updateService:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal memperbarui tindakan' });
+    }
+  },
+  deleteService: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [result] = await pool.query(
+        'UPDATE services SET delt_flg = "Y" WHERE id = ?',
+        [id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Tindakan tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Tindakan berhasil dihapus' });
+    } catch (error) {
+      console.error('Error in deleteService:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal menghapus tindakan' });
+    }
+  },
+};
+
+const polyclinicController = {
+  getAllPolyclinics: async (req, res) => {
+    try {
+      const [polys] = await pool.query('SELECT id, name, code, created_dt, update_dt FROM polyclinic ORDER BY id');
+      res.json({ status: 'success', data: polys });
+    } catch (error) {
+      console.error('Error in getAllPolyclinics:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal mengambil data poli' });
+    }
+  },
+  createPolyclinic: async (req, res) => {
+    try {
+      const { name, code } = req.body;
+      if (!name || !code) {
+        return res.status(400).json({ status: 'error', message: 'Nama dan kode wajib diisi' });
+      }
+      const [result] = await pool.query(
+        'INSERT INTO polyclinic (name, code, created_dt) VALUES (?, ?, NOW())',
+        [name, code]
+      );
+      res.status(201).json({ status: 'success', message: 'Poli berhasil ditambahkan', data: { id: result.insertId } });
+    } catch (error) {
+      console.error('Error in createPolyclinic:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal menambah poli' });
+    }
+  },
+  updatePolyclinic: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, code } = req.body;
+      if (!name || !code) {
+        return res.status(400).json({ status: 'error', message: 'Nama dan kode wajib diisi' });
+      }
+      const [result] = await pool.query(
+        'UPDATE polyclinic SET name = ?, code = ?, update_dt = NOW() WHERE id = ?',
+        [name, code, id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Poli tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Poli berhasil diperbarui' });
+    } catch (error) {
+      console.error('Error in updatePolyclinic:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal memperbarui poli' });
+    }
+  },
+  deletePolyclinic: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [result] = await pool.query('DELETE FROM polyclinic WHERE id = ?', [id]);
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ status: 'error', message: 'Poli tidak ditemukan' });
+      }
+      res.json({ status: 'success', message: 'Poli berhasil dihapus' });
+    } catch (error) {
+      console.error('Error in deletePolyclinic:', error);
+      res.status(500).json({ status: 'error', message: 'Gagal menghapus poli' });
+    }
+  },
+};
+
 module.exports = { 
   ...doctorController, 
   ...patientController,
   ...doctorScheduleController,
-  ...medicineController
+  ...medicineController,
+  ...serviceController,
+  ...polyclinicController,
 };

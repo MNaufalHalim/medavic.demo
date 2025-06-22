@@ -27,5 +27,8 @@ router.get('/diagnoses/search', authMiddleware, apiLimiter, medicalController.se
 router.post('/visit-procedures', authMiddleware, apiLimiter, medicalController.updateVisitProcedures);
 router.post('/visit-medications', authMiddleware, apiLimiter, medicalController.updateVisitMedications);
 router.post('/visit-diagnoses', authMiddleware, apiLimiter, medicalController.updateVisitDiagnoses);
+router.post('/update-appointment-status', authMiddleware, apiLimiter, medicalController.updateAppointmentStatus);
+router.post('/reactivate-appointment', authMiddleware, apiLimiter, medicalController.reactivateAppointment);
+router.get('/visits/appointment/:appointment_code', authMiddleware, apiLimiter, medicalController.getVisitIdByAppointment);
 
 module.exports = router;

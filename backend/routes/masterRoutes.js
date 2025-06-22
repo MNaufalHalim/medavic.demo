@@ -26,4 +26,16 @@ router.post('/medicines', authMiddleware, masterController.createMedicine);
 router.put('/medicines/:id', authMiddleware, masterController.updateMedicine);
 router.delete('/medicines/:id', authMiddleware, masterController.deleteMedicine);
 
+// Services (Tindakan)
+router.get('/services', authMiddleware, masterController.getAllServices);
+router.post('/services', authMiddleware, masterController.createService);
+router.put('/services/:id', authMiddleware, masterController.updateService);
+router.delete('/services/:id', authMiddleware, masterController.deleteService);
+
+// Polyclinic (Poli)
+router.get('/polyclinics', authMiddleware, masterController.getAllPolyclinics);
+router.post('/polyclinics', authMiddleware, masterController.createPolyclinic);
+router.put('/polyclinics/:id', authMiddleware, masterController.updatePolyclinic);
+router.delete('/polyclinics/:id', authMiddleware, masterController.deletePolyclinic);
+
 module.exports = router;

@@ -4,13 +4,13 @@ import PageTemplate from '../../components/PageTemplate';
 import axios from 'axios';
 import config from '../../config';
 import { 
-  AlertTriangle, Award, Calendar, CalendarClock, CalendarDays, CalendarPlus, CalendarOff, CalendarX2, CheckCircle, ChevronDown, Clock, Clock3, Clock9, Edit3, FileText, Filter, Info, Loader2, Mail, Phone, Plus, PlusCircle, Save, Search, Shield, Stethoscope, Trash2, User, Users, XCircle, MapPin, ShieldCheck, ShieldAlert, Sun, Activity, Wallet 
+  AlertTriangle, Award, Calendar, CalendarClock, CalendarDays, CalendarPlus, CalendarOff, CalendarX2, CheckCircle, ChevronDown, Clock, Clock3, Clock9, Edit3, FileText, Filter, Info, Loader2, Mail, Phone, Plus, PlusCircle, Save, Search, Shield, Stethoscope, Trash2, User, Users, XCircle, MapPin, ShieldCheck, ShieldAlert, Sun, Activity, Wallet, Building2 
 } from 'lucide-react';
 
 const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 // Reusable DoctorInfoForm Component
-const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
+const DoctorInfoForm = ({ doctor, onChange, isEditing, polyclinics }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -23,7 +23,9 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                  <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <User size={14} className="text-white" />
+                  </div>
                 </div>
                 <input
                   type="text"
@@ -37,8 +39,8 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
             </>
           ) : (
             <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
-              <div className="p-2 bg-sky-50 rounded-lg">
-                <User size={18} className="text-sky-500" />
+              <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+                <User size={18} className="text-blue-500" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 mb-1">Nama Lengkap</p>
@@ -61,7 +63,9 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Stethoscope size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                  <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <Stethoscope size={14} className="text-white" />
+                  </div>
                 </div>
                 <input
                   type="text"
@@ -75,8 +79,8 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
             </>
           ) : (
             <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
-              <div className="p-2 bg-sky-50 rounded-lg">
-                <Stethoscope size={18} className="text-sky-500" />
+              <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+                <Stethoscope size={18} className="text-blue-500" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 mb-1">Spesialisasi</p>
@@ -99,7 +103,9 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                  <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <Mail size={14} className="text-white" />
+                  </div>
                 </div>
                 <input
                   type="email"
@@ -112,8 +118,8 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
             </>
           ) : (
             <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
-              <div className="p-2 bg-sky-50 rounded-lg">
-                <Mail size={18} className="text-sky-500" />
+              <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+                <Mail size={18} className="text-blue-500" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 mb-1">Email</p>
@@ -136,7 +142,9 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                  <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <Phone size={14} className="text-white" />
+                  </div>
                 </div>
                 <input
                   type="tel"
@@ -149,8 +157,8 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
             </>
           ) : (
             <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
-              <div className="p-2 bg-sky-50 rounded-lg">
-                <Phone size={18} className="text-sky-500" />
+              <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+                <Phone size={18} className="text-blue-500" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 mb-1">Nomor Telepon</p>
@@ -173,7 +181,9 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Activity size={18} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-200" />
+                  <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <Activity size={14} className="text-white" />
+                  </div>
                 </div>
                 <select
                   value={doctor.status === 'Active' ? 'Active' : 'Inactive'}
@@ -191,25 +201,62 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing }) => {
             </>
           ) : (
             <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
-              <div className="p-2 bg-sky-50 rounded-lg">
-                {doctor.status === 'Active' ? 
-                  <ShieldCheck size={18} className="text-green-500" /> : 
+              {doctor.status === 'Active' ? (
+                <div className="p-2 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-sm">
+                  <ShieldCheck size={18} className="text-green-500" />
+                </div>
+              ) : (
+                <div className="p-2 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg shadow-sm">
                   <ShieldAlert size={18} className="text-red-500" />
-                }
-              </div>
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 mb-1">Status</p>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   doctor.status === 'Active'
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-700'
+                    ? 'bg-emerald-100 text-emerald-700' 
+                    : 'bg-rose-100 text-rose-700'
                 }`}>
                   {doctor.status === 'Active' ? 'Aktif' : 'Tidak Aktif'}
-                  </span>
+                </span>
               </div>
             </div>
           )}
         </div>
+
+        {/* Poli */}
+        {isEditing ? (
+          <div className="relative group">
+            <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-sky-600 transition-colors duration-200">
+              Poli
+            </label>
+            <div className="relative">
+              <select
+                value={doctor.poli || ''}
+                onChange={e => onChange('poli', e.target.value)}
+                className="w-full pl-4 pr-8 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm transition-all duration-300 hover:border-sky-300 appearance-none cursor-pointer"
+              >
+                <option value="">Pilih Poli</option>
+                {polyclinics.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <ChevronDown size={18} className="text-gray-400" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start space-x-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-sky-100 transition-all duration-300">
+            <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+              <Building2 size={18} className="text-blue-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-gray-500 mb-1">Poli</p>
+              <p className="text-sm text-gray-800 break-words">{doctor.poli_name || 'N/A'}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -508,6 +555,10 @@ const Dokter = () => {
     removedScheduleIds: [],
     filter: 'all',
     isEditing: false,
+    polyclinics: [],
+    showNotif: false,
+    notifType: '',
+    notifMessage: '',
   });
 
   const {
@@ -524,6 +575,10 @@ const Dokter = () => {
     removedScheduleIds,
     filter,
     isEditing,
+    polyclinics,
+    showNotif,
+    notifType,
+    notifMessage,
   } = state;
 
   const setStateField = (field, value) => {
@@ -532,6 +587,7 @@ const Dokter = () => {
 
   useEffect(() => {
     fetchDoctors();
+    fetchPolyclinics();
   }, []);
 
   const fetchDoctors = useCallback(async () => {
@@ -566,6 +622,14 @@ const Dokter = () => {
     } catch {
       setStateField('scheduleList', []);
     }
+  }, []);
+
+  const fetchPolyclinics = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${config.apiUrl}/master/polyclinics`, { headers: { Authorization: `Bearer ${token}` } });
+      setStateField('polyclinics', res.data.data);
+    } catch {}
   }, []);
 
   const handleSelectDoctor = useCallback((doc) => {
@@ -636,18 +700,33 @@ const Dokter = () => {
           const flatScheduleList = Object.entries(schedulesByDay).flatMap(([day, slots]) => 
             slots.map(slot => ({...slot, day_of_week: day, temp_id: slot.id || uuidv4()}))
           );
-          setState(prev => ({
+          await fetchDoctors(); // Refresh daftar dokter
+          // Ambil data dokter terbaru dari doctors (setelah fetch)
+          setState(prev => {
+            const updatedDoctor = prev.doctors.find(d => d.id === editDoctor.id);
+            return {
             ...prev,
             success: 'Data dokter berhasil diperbarui!',
             error: '',
             scheduleList: flatScheduleList,
             isEditing: false,
             loadingSave: false,
-            selectedDoctor: { ...editDoctor, schedule: schedulesByDay },
-            editDoctor: { ...editDoctor, schedule: schedulesByDay },
-          }));
-          await fetchDoctors(); // Refresh daftar dokter
+              selectedDoctor: updatedDoctor ? { ...updatedDoctor } : { ...editDoctor },
+              editDoctor: updatedDoctor ? { ...updatedDoctor } : { ...editDoctor },
+              showNotif: true,
+              notifType: 'success',
+              notifMessage: 'Data dokter berhasil diperbarui!',
+            };
+          });
+          setTimeout(() => setStateField('showNotif', false), 4000);
         } else {
+          setState(prev => ({
+            ...prev,
+            showNotif: true,
+            notifType: 'error',
+            notifMessage: response.data.message || 'Gagal memperbarui data.',
+          }));
+          setTimeout(() => setStateField('showNotif', false), 4000);
           throw new Error(response.data.message || 'Gagal memperbarui data.');
         }
       } else { // CREATE
@@ -877,6 +956,7 @@ const Dokter = () => {
               doctor={doctorToDisplay || { name: '', sip: '', str: '', specialization: '', phone: '', email: '', address: '', is_active: true }}
               isEditing={isEditing}
               onChange={handleInputChange}
+              polyclinics={polyclinics}
             />
               </div>
             </div>
@@ -940,14 +1020,16 @@ const Dokter = () => {
           }
         `}
       </style>
-      {/* Gradient Header */}
-      <div className="bg-gradient-to-r from-sky-500 via-indigo-500 to-blue-600 rounded-2xl shadow-lg p-8 mb-8 flex items-center justify-between animate-fade-in hover:shadow-xl transition-all duration-300">
+      {/* Header ala resep-obat.jsx */}
+      <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 rounded-2xl shadow-xl p-6 mb-8 border border-blue-100/50 flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in backdrop-blur-sm">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3 group">
-            <Stethoscope size={36} className="text-white drop-shadow transition-transform duration-300 group-hover:scale-110" />
-            <span className="transition-all duration-300 group-hover:text-blue-50">Manajemen Dokter</span>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
+              <Stethoscope className="text-white" size={24} />
+            </div>
+            Manajemen Dokter
           </h1>
-          <p className="text-blue-50/80 mt-2 text-lg transition-all duration-300 group-hover:text-blue-50">Kelola data dokter, jadwal praktik, dan informasi penting lainnya.</p>
+          <p className="mt-2 text-gray-600 font-medium">Kelola data dokter, jadwal praktik, dan informasi penting lainnya.</p>
         </div>
         <button
           onClick={() => {
@@ -971,10 +1053,12 @@ const Dokter = () => {
               isEditing: true,
             }));
           }}
-          className="bg-white/90 hover:bg-white text-sky-700 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-lg border border-sky-200 hover:scale-105 hover:border-sky-300"
+          className="bg-white/90 hover:bg-white text-blue-700 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-lg border border-blue-200 hover:scale-105 hover:border-blue-300"
           aria-label="Tambah dokter baru"
         >
-          <Plus size={24} className="text-sky-600 transition-transform duration-300 group-hover:rotate-90" /> 
+          <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+            <Plus size={16} className="text-white" />
+          </div>
           <span className="transition-all duration-300">Tambah Dokter Baru</span>
         </button>
       </div>
@@ -1103,6 +1187,12 @@ const Dokter = () => {
                           }`} />
                           <span className="truncate">{doc.specialization || 'N/A'}</span>
                         </div>
+                        <div className={`flex items-center text-xs mt-1 text-gray-400 ${
+                          selectedDoctor?.id === doc.id ? 'text-sky-600' : 'text-gray-500 hover:text-gray-700'
+                        }`}>
+                          <Building2 size={14} className="mr-1" />
+                          <span>{doc.poli_name || 'N/A'}</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-end flex-shrink-0 ml-2">
@@ -1173,6 +1263,12 @@ const Dokter = () => {
           )}
         </div>
       </div>
+      {showNotif && (
+        <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-fade-in ${notifType === 'success' ? 'bg-green-100 border border-green-300 text-green-800' : 'bg-red-100 border border-red-300 text-red-800'}`}>
+          {notifType === 'success' ? <CheckCircle size={24} className="text-green-600" /> : <XCircle size={24} className="text-red-600" />}
+          <span className="font-semibold">{notifMessage}</span>
+        </div>
+      )}
     </PageTemplate>
   );
 };

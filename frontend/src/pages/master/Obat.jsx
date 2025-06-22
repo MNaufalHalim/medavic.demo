@@ -157,21 +157,25 @@ const Obat = () => {
 
   return (
     <PageTemplate>
-      {/* Gradient Header ala Dokter.jsx */}
-      <div className="bg-gradient-to-r from-sky-500 via-indigo-500 to-blue-600 rounded-2xl shadow-lg p-8 mb-8 flex items-center justify-between animate-fade-in hover:shadow-xl transition-all duration-300">
+      {/* Header ala resep-obat.jsx */}
+      <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 rounded-2xl shadow-xl p-6 mb-8 border border-blue-100/50 flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in backdrop-blur-sm">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3 group">
-            <Filter size={36} className="text-white drop-shadow transition-transform duration-300 group-hover:scale-110" />
-            <span className="transition-all duration-300 group-hover:text-blue-50">Manajemen Obat</span>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
+              <Filter className="text-white" size={24} />
+            </div>
+            Manajemen Obat
           </h1>
-          <p className="text-blue-50/80 mt-2 text-lg transition-all duration-300 group-hover:text-blue-50">Kelola data obat, satuan, harga, dan informasi penting lainnya.</p>
+          <p className="mt-2 text-gray-600 font-medium">Kelola data obat, satuan, harga, dan informasi penting lainnya.</p>
         </div>
         <button
           onClick={() => openModal()}
-          className="bg-white/90 hover:bg-white text-sky-700 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-lg border border-sky-200 hover:scale-105 hover:border-sky-300"
+          className="bg-white/90 hover:bg-white text-blue-700 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-lg border border-blue-200 hover:scale-105 hover:border-blue-300"
           aria-label="Tambah obat baru"
         >
-          <Plus size={24} className="text-sky-600 transition-transform duration-300 group-hover:rotate-90" />
+          <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+            <Plus size={16} className="text-white" />
+          </div>
           <span className="transition-all duration-300">Tambah Obat Baru</span>
         </button>
       </div>
@@ -179,8 +183,11 @@ const Obat = () => {
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-4 items-end mb-4 bg-white/80 p-5 rounded-2xl border border-sky-100 shadow-lg transition-all duration-300 hover:shadow-xl animate-fade-in">
         <div className="flex flex-col min-w-[180px] group">
-          <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1 group-focus-within:text-sky-600 transition-colors duration-200">
-            <Filter size={14} className="text-sky-400 group-focus-within:text-sky-600 transition-colors duration-200" /> Nama Obat
+          <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1 group-focus-within:text-blue-600 transition-colors duration-200">
+            <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+              <Filter size={12} className="text-white" />
+            </div>
+            Nama Obat
           </label>
           <div className="relative">
             <input
@@ -196,8 +203,11 @@ const Obat = () => {
           </div>
         </div>
         <div className="flex flex-col min-w-[150px] group">
-          <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1 group-focus-within:text-sky-600 transition-colors duration-200">
-            <ChevronDown size={14} className="text-sky-400 group-focus-within:text-sky-600 transition-colors duration-200" /> Satuan
+          <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1 group-focus-within:text-blue-600 transition-colors duration-200">
+            <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-sm">
+              <ChevronDown size={12} className="text-white" />
+            </div>
+            Satuan
           </label>
           <div className="relative">
             <select
@@ -216,8 +226,11 @@ const Obat = () => {
           </div>
         </div>
         <div className="flex flex-col min-w-[120px] group">
-          <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1 group-focus-within:text-sky-600 transition-colors duration-200">
-            <ChevronDown size={14} className="text-sky-400 group-focus-within:text-sky-600 transition-colors duration-200 rotate-90" /> Harga Min
+          <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1 group-focus-within:text-blue-600 transition-colors duration-200">
+            <div className="w-4 h-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center shadow-sm">
+              <Wallet size={12} className="text-white" />
+            </div>
+            Harga Min
           </label>
           <div className="relative">
             <input
@@ -234,8 +247,11 @@ const Obat = () => {
           </div>
         </div>
         <div className="flex flex-col min-w-[120px] group">
-          <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1 group-focus-within:text-sky-600 transition-colors duration-200">
-            <ChevronDown size={14} className="text-sky-400 group-focus-within:text-sky-600 transition-colors duration-200 -rotate-90" /> Harga Max
+          <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1 group-focus-within:text-blue-600 transition-colors duration-200">
+            <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+              <Wallet size={12} className="text-white" />
+            </div>
+            Harga Max
           </label>
           <div className="relative">
             <input
@@ -322,8 +338,11 @@ const Obat = () => {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md animate-fade-in">
-            <h3 className="text-xl font-bold text-sky-700 mb-6 flex items-center gap-2">
-              {editMode ? <Edit3 size={20} /> : <Plus size={20} />} {editMode ? 'Edit Obat' : 'Tambah Obat'}
+            <h3 className="text-xl font-bold text-blue-700 mb-6 flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                {editMode ? <Edit3 size={18} className="text-white" /> : <Plus size={18} className="text-white" />}
+              </div>
+              {editMode ? 'Edit Obat' : 'Tambah Obat'}
             </h3>
             <div className="space-y-5">
               <div>
@@ -380,14 +399,26 @@ const Obat = () => {
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all duration-300 flex items-center gap-2 text-sm border border-gray-300 hover:scale-105"
                 disabled={saving}
               >
-                <XCircle size={18} /> Batal
+                <div className="w-4 h-4 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center">
+                  <XCircle size={12} className="text-white" />
+                </div>
+                Batal
               </button>
               <button
                 onClick={handleSave}
-                className="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-sm disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 text-sm disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105"
                 disabled={saving}
               >
-                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Simpan
+                {saving ? (
+                  <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Loader2 size={12} className="animate-spin text-white" />
+                  </div>
+                ) : (
+                  <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Save size={12} className="text-white" />
+                  </div>
+                )}
+                Simpan
               </button>
             </div>
           </div>

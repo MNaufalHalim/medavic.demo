@@ -27,7 +27,9 @@ import {
   Filter, 
   User, 
   Pill,
-  CreditCard
+  CreditCard,
+  Check,
+  Lock,
 } from 'lucide-react';
 
 // CSS for animations and styling
@@ -78,6 +80,72 @@ const styles = `
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #64748b;
   }
+  
+  /* Datepicker styling for better browser compatibility */
+  input[type="date"] {
+    position: relative;
+    background-color: white;
+  }
+  
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit {
+    padding: 0;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-text {
+    padding: 0 2px;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-year-field {
+    padding: 0 2px;
+  }
+  
+  /* Firefox datepicker styling */
+  input[type="date"]::-moz-calendar-picker-indicator {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100%;
+  }
+  
+  /* Edge datepicker styling */
+  input[type="date"]::-ms-clear,
+  input[type="date"]::-ms-expand {
+    display: none;
+  }
+  
+  input[type="date"]::-ms-calendar-picker-indicator {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100%;
+  }
 `;
 
 // MedicalRecordModal Component
@@ -85,129 +153,82 @@ const MedicalRecordModal = ({ type, title, show, onClose, onSave, selectedItems,
   const [searchTerm, setSearchTerm] = useState('');
   const [options, setOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [commonPresets, setCommonPresets] = useState({}); // Store presets for medications
-  const [tempMedication, setTempMedication] = useState(null); // Store temporarily selected medication
-  const [tempPreset, setTempPreset] = useState(null); // Store temporarily selected preset
-  
-  // Modal type specific configurations
+  const [tempMedication, setTempMedication] = useState(null);
+  const [tempPreset, setTempPreset] = useState(null);
+
+  // Reset modal state when modal is closed or opened
+  useEffect(() => {
+    if (!show) {
+      // Reset internal state when modal is closed
+      setSearchTerm('');
+      setOptions([]);
+      setIsLoading(false);
+      setTempMedication(null);
+      setTempPreset(null);
+    }
+  }, [show]);
+
+  // Sync selected items when modal is opened
+  useEffect(() => {
+    if (show && selectedItems) {
+      console.log(`Modal opened for ${type}, selected items:`, selectedItems);
+    }
+  }, [show, selectedItems, type]);
+
+  // Modal config
   const modalConfig = {
     procedure: {
-      icon: <Activity size={22} />,
-      color: 'from-blue-600 to-blue-700',
-      bgColor: 'from-blue-50 to-white',
-      borderColor: 'border-blue-100',
-      textColor: 'text-blue-600',
-      hoverColor: 'hover:bg-blue-50',
-      activeColor: 'bg-blue-100'
+      icon: <Activity size={20} />, 
+      color: 'blue',
+      gradient: 'from-blue-50 to-indigo-50',
+      accent: 'blue'
     },
     diagnose: {
-      icon: <FileText size={22} />,
-      color: 'from-green-600 to-green-700',
-      bgColor: 'from-green-50 to-white',
-      borderColor: 'border-green-100',
-      textColor: 'text-green-600',
-      hoverColor: 'hover:bg-green-50',
-      activeColor: 'bg-green-100'
+      icon: <FileText size={20} />, 
+      color: 'green',
+      gradient: 'from-green-50 to-emerald-50',
+      accent: 'green'
     },
     medication: {
-      icon: <Pill size={22} />,
-      color: 'from-purple-600 to-purple-700',
-      bgColor: 'from-purple-50 to-white',
-      borderColor: 'border-purple-100',
-      textColor: 'text-purple-600',
-      hoverColor: 'hover:bg-purple-50',
-      activeColor: 'bg-purple-100'
+      icon: <Pill size={20} />, 
+      color: 'purple',
+      gradient: 'from-purple-50 to-violet-50',
+      accent: 'purple'
     }
-  }
+  };
 
-  // Fetch presets for medications
-  const fetchPresets = useCallback(async (medicationId) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found in localStorage');
-        return [];
-      }
-      const response = await axios.get(`${config.apiUrl}/medical/medication-presets/${medicationId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.data.success) {
-        return response.data.data;
-      }
-      return [];
-    } catch (error) {
-      console.error('Error fetching presets:', error);
-      return [];
-    }
-  }, []);
+  // Filter out already selected items from search results
+  const filteredOptions = useMemo(() => {
+    if (!options) return [];
+    return options.filter(opt => !selectedItems.includes(opt.value));
+  }, [options, selectedItems]);
 
-  // Debounced search handler
-  const handleSearch = useCallback(async (term) => {
-    if (term.length < 2) {
-      setOptions([]);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const results = await onSearch(type, term);
-      setOptions(results || []);
-    } catch (error) {
-      setOptions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [type, onSearch]);
-
-  // Debounce search with useEffect
+  // Debounced search
   useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      handleSearch(searchTerm);
-    }, 300);
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchTerm]);
-
-  // Search items with debounce
-  useEffect(() => {
-    const searchItems = async () => {
-      if (!searchTerm.trim()) {
+    if (!searchTerm || searchTerm.length < 2) {
         setOptions([]);
         return;
       }
-
       setIsLoading(true);
-      try {
+    const timeout = setTimeout(async () => {
         const results = await onSearch(type, searchTerm);
-        setOptions(results);
-      } catch (error) {
-        console.error(`Error searching ${type}:`, error);
-      } finally {
+      setOptions(results || []);
         setIsLoading(false);
-      }
-    };
-
-    const timeoutId = setTimeout(searchItems, 500);
-    return () => clearTimeout(timeoutId);
+    }, 300);
+    return () => clearTimeout(timeout);
   }, [searchTerm, type, onSearch]);
 
   // Handle medication selection
   const handleSelectMedication = (selectedOption) => {
     if (!selectedOption) return;
     setTempMedication(selectedOption);
-    // Initialize empty fields for direct input
-    setTempPreset({
-      dosage: '',
-      frequency: '',
-      duration: ''
-    });
+    setTempPreset({ dosage: '', frequency: '', duration: '' });
   };
 
-  // Handle preset confirmation
+  // Confirm medication preset
   const handleConfirmPreset = () => {
     if (!tempMedication || !tempPreset) return;
     if (!tempPreset.dosage || !tempPreset.frequency || !tempPreset.duration) return;
-
-    // Buat objek obat dengan detail lengkap
     const medicationWithDetails = {
       ...tempMedication,
       value: tempMedication.value,
@@ -217,31 +238,20 @@ const MedicalRecordModal = ({ type, title, show, onClose, onSave, selectedItems,
         duration: tempPreset.duration
       }
     };
-
-    // Tambahkan obat ke daftar terpilih
     onSelectItem(type, medicationWithDetails);
-    
-    // Tambahkan juga ke medicalRecord untuk preview
-    if (type === 'medication') {
       setMedicalRecord(prev => ({
         ...prev,
         medications: [
           ...prev.medications,
           {
             name: tempMedication.label,
-            details: {
-              dosage: tempPreset.dosage,
-              frequency: tempPreset.frequency,
-              duration: tempPreset.duration
-            }
+          details: { ...tempPreset }
           }
         ]
       }));
-    }
-    
-    // Reset state
     setTempMedication(null);
     setTempPreset(null);
+    setSearchTerm('');
   };
 
   // Format selected medication display
@@ -252,11 +262,11 @@ const MedicalRecordModal = ({ type, title, show, onClose, onSave, selectedItems,
         const { dosage, frequency, duration } = item.details;
         return (
           <div className="flex flex-col">
-            <span className="font-medium">{item.label || item.name || item.value}</span>
-            <div className="text-xs text-gray-500 mt-1">
-              <span className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded mr-1">{dosage}</span>
-              <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded mr-1">{frequency}</span>
-              <span className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{duration}</span>
+            <span className="font-semibold text-gray-800">{item.label || item.name || item.value}</span>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-lg text-xs font-medium">Dosis: {dosage}</span>
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-xs font-medium">Frek: {frequency}</span>
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-xs font-medium">Durasi: {duration}</span>
             </div>
           </div>
         );
@@ -266,15 +276,31 @@ const MedicalRecordModal = ({ type, title, show, onClose, onSave, selectedItems,
         const { dosage, frequency, duration } = medicationDetails[item];
         return (
           <div className="flex flex-col">
-            <span className="font-medium">{item}</span>
-            <div className="text-xs text-gray-500 mt-1">
-              <span className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded mr-1">{dosage}</span>
-              <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded mr-1">{frequency}</span>
-              <span className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{duration}</span>
+            <span className="font-semibold text-gray-800">{item}</span>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-lg text-xs font-medium">Dosis: {dosage}</span>
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-xs font-medium">Frek: {frequency}</span>
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-xs font-medium">Durasi: {duration}</span>
             </div>
           </div>
         );
       }
+      // Handle string items (from recent items)
+      else if (typeof item === 'string') {
+        return (
+          <div className="flex flex-col">
+            <span className="font-semibold text-gray-800">{item}</span>
+            <div className="text-xs text-gray-500 mt-1">Detail tidak tersedia</div>
+          </div>
+        );
+      }
+    } else if (type === 'diagnose') {
+      // For diagnoses, display the full value (code + name)
+      return (
+        <div className="flex flex-col">
+          <span className="font-semibold text-gray-800">{item}</span>
+        </div>
+      );
     }
     return typeof item === 'object' && item.name ? item.name : item;
   };
@@ -282,222 +308,233 @@ const MedicalRecordModal = ({ type, title, show, onClose, onSave, selectedItems,
   if (!show) return null;
 
   return (
-    <div className={`fixed inset-0 z-50 ${show ? 'flex' : 'hidden'} items-center justify-center p-4 animate-fade-in`}>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl z-10 relative border border-gray-100 overflow-hidden animate-fade-in">
-        <div className={`bg-gradient-to-r ${modalConfig[type].color} px-6 py-4 flex justify-between items-center`}>
-          <h2 className="text-lg font-bold text-white flex items-center">
-            <span className="mr-2">{modalConfig[type].icon}</span>
-            {title}
-          </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className={`bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto p-0 animate-fade-in`}>
+        {/* Header */}
+        <div className={`bg-gradient-to-r ${modalConfig[type].gradient} px-6 py-4 rounded-t-2xl`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 bg-gradient-to-br from-${modalConfig[type].accent}-500 to-${modalConfig[type].accent === 'blue' ? 'indigo' : modalConfig[type].accent === 'green' ? 'emerald' : 'indigo'}-600 rounded-xl flex items-center justify-center shadow-lg`}>
+                {React.cloneElement(modalConfig[type].icon, { className: "text-white" })}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Tambah {title}</h2>
+                <p className="text-sm text-gray-600">Pilih dan kelola {title.toLowerCase()} untuk pasien</p>
+              </div>
+            </div>
           <button
             onClick={onClose}
-            className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-1.5 transition-colors duration-200"
+              className="p-2 rounded-xl hover:bg-white/50 text-gray-400 hover:text-gray-700 transition-all duration-200"
           >
             <X size={20} />
           </button>
         </div>
-        <div className="p-6 custom-scrollbar" style={{ maxHeight: 'calc(80vh - 60px)', overflowY: 'auto' }}>
-          <div className={`bg-gradient-to-r ${modalConfig[type].bgColor} p-4 rounded-xl border ${modalConfig[type].borderColor} shadow-sm mb-5`}>
-            <label className="text-sm font-medium mb-2 flex items-center">
-              <Search className="mr-1.5 text-gray-500" size={16} />
+        </div>
+
+        {/* Body */}
+        <div className="p-6">
+          {/* Search Section */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                <Search size={12} className="text-white" />
+              </div>
               Cari {title.toLowerCase()}
             </label>
             <div className="relative">
-              <Select
-                isClearable
-                isSearchable
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
                 placeholder={`Ketik untuk mencari ${title.toLowerCase()}...`}
-                options={options}
-                inputValue={searchTerm}
-                onInputChange={(value, { action }) => {
-                  if (action === 'input-change') {
-                    setSearchTerm(value);
-                  }
-                }}
-                onChange={handleSelectMedication}
-                isLoading={isLoading}
-                noOptionsMessage={({ inputValue }) => {
-                  if (!inputValue) return "Masukkan kata pencarian...";
-                  if (inputValue.length < 2) return "Masukkan minimal 2 huruf...";
-                  if (isLoading) return "Memuat data...";
-                  return "Tidak ada hasil";
-                }}
-                className="text-sm"
-                classNames={{
-                  control: (state) => `border ${state.isFocused ? `border-${type === 'procedure' ? 'blue' : type === 'diagnose' ? 'green' : 'purple'}-500` : 'border-gray-300'} rounded-lg shadow-sm`,
-                  option: (state) => `${state.isFocused ? `bg-${type === 'procedure' ? 'blue' : type === 'diagnose' ? 'green' : 'purple'}-50` : 'bg-white'} cursor-pointer`,
-                  menu: () => 'rounded-lg shadow-lg border border-gray-200 mt-1 z-50 overflow-hidden',
-                  menuList: () => 'py-1',
-                }}
-                filterOption={null}
-                formatOptionLabel={({ label, stock, price }) => (
-                  <div className="flex justify-between items-center py-1">
-                    <div className="font-medium">{label}</div>
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg max-h-48 overflow-y-auto z-10">
+                  {isLoading ? (
+                    <div className="p-4 text-center text-gray-400 text-sm flex items-center justify-center gap-2">
+                      <RefreshCw size={16} className="animate-spin" />
+                      Memuat hasil...
+                    </div>
+                  ) : filteredOptions.length === 0 ? (
+                    <div className="p-4 text-center text-gray-400 text-sm">Tidak ada hasil ditemukan</div>
+                  ) : (
+                    filteredOptions.map((opt, idx) => (
+                      <div
+                        key={opt.value}
+                        className="px-4 py-3 cursor-pointer hover:bg-slate-50 text-sm flex justify-between items-center border-b border-gray-100 last:border-b-0 transition-colors duration-150"
+                        onClick={() => {
+                          if (type === 'medication') handleSelectMedication(opt);
+                          else onSelectItem(type, opt);
+                          setSearchTerm('');
+                        }}
+                      >
+                        <span className="font-medium text-gray-800">{opt.label}</span>
                     {type === 'medication' && (
-                      <div className="text-right">
-                        <div className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full inline-block mr-1">Stok: {stock || 'N/A'}</div>
-                        <div className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full inline-block">Harga: {price || 'N/A'}</div>
+                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                            Stok: {opt.stock || 'N/A'}
+                          </span>
+                        )}
                       </div>
+                    ))
                     )}
                   </div>
                 )}
-              />
             </div>
           </div>
           
+          {/* Medication Detail Input */}
           {type === 'medication' && tempMedication && (
-            <div className="bg-gradient-to-r from-purple-50 to-white p-4 rounded-xl border border-purple-100 shadow-sm mb-5 animate-fade-in">
-              <div className="text-sm font-medium mb-3 flex items-center text-purple-700">
-                <Pill className="mr-1.5 text-purple-500" size={16} />
-                Detail penggunaan obat: {tempMedication.label}
+            <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Pill size={18} className="text-purple-600" />
+                <span className="text-sm font-semibold text-purple-800">Detail Penggunaan: {tempMedication.label}</span>
               </div>
-              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1 ml-1">Dosis</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Dosis</label>
                   <input
                     type="text"
                     placeholder="Contoh: 3x1"
                     value={tempPreset?.dosage || ''}
-                    onChange={(e) => setTempPreset(prev => ({ ...prev || {}, dosage: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                    onChange={e => setTempPreset(prev => ({ ...prev, dosage: e.target.value }))} 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1 ml-1">Frekuensi</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Frekuensi</label>
                   <input
                     type="text"
                     placeholder="Contoh: Setelah makan"
                     value={tempPreset?.frequency || ''}
-                    onChange={(e) => setTempPreset(prev => ({ ...prev || {}, frequency: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                    onChange={e => setTempPreset(prev => ({ ...prev, frequency: e.target.value }))} 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1 ml-1">Durasi</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Durasi</label>
                   <input
                     type="text"
                     placeholder="Contoh: 5 hari"
                     value={tempPreset?.duration || ''}
-                    onChange={(e) => setTempPreset(prev => ({ ...prev || {}, duration: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                    onChange={e => setTempPreset(prev => ({ ...prev, duration: e.target.value }))} 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
                   />
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-purple-100">
-                <div className="text-xs text-gray-500 italic">
-                  <div className="flex items-center">
-                    <FileText size={12} className="mr-1 text-purple-400" />
-                    Masukkan detail penggunaan obat
                   </div>
                 </div>
                 <button
                   onClick={handleConfirmPreset}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${tempPreset?.dosage && tempPreset?.frequency && tempPreset?.duration ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                   disabled={!tempPreset?.dosage || !tempPreset?.frequency || !tempPreset?.duration}
+                className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  tempPreset?.dosage && tempPreset?.frequency && tempPreset?.duration 
+                    ? 'bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-lg' 
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
                 >
-                  Tambahkan
+                Tambahkan ke Daftar
                 </button>
-              </div>
             </div>
           )}
 
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium flex items-center">
-                <ClipboardList className={`mr-1.5 ${modalConfig[type].textColor}`} size={16} />
+          {/* Selected Items Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <ClipboardList size={16} className="text-gray-500" />
                 {title} Terpilih
-              </label>
               {selectedItems.length > 0 && (
-                <div className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
-                  {selectedItems.length} item
-                </div>
-              )}
+                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                    {selectedItems.length}
+                  </span>
+                )}
+              </label>
             </div>
-            <div className={`flex flex-wrap gap-2 border border-gray-200 rounded-lg p-3 min-h-[60px] ${modalConfig[type].bgColor} bg-opacity-30`}>
+            <div className="min-h-[60px] p-4 bg-slate-50 rounded-xl shadow-sm">
               {selectedItems.length > 0 ? (
-                selectedItems.map((item, index) => (
-                  <div 
-                    key={index} 
-                    className={`px-3 py-2 rounded-lg text-sm flex items-start justify-between bg-white border ${modalConfig[type].borderColor} shadow-sm animate-fade-in w-full md:w-auto`}
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                  >
-                    <div className="mr-2">
+                <div className="flex flex-wrap gap-3">
+                  {selectedItems.map((item, idx) => (
+                    <div key={idx} className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 w-full">
+                      <div className="flex-1">
                       {formatSelectedMedication(item)}
                     </div>
                     <button 
                       onClick={() => onRemoveItem(type, item)} 
-                      className="text-gray-400 hover:text-gray-700 ml-1 p-0.5 rounded-full hover:bg-gray-100 flex-shrink-0 self-start"
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors duration-200 flex-shrink-0"
+                        title="Hapus item"
                     >
-                      <X size={14} className="text-gray-400 hover:text-gray-700" />
+                        <X size={16} />
                     </button>
                   </div>
-                ))
+                  ))}
+                </div>
               ) : (
-                <div className="text-sm text-gray-500 flex items-center justify-center w-full py-3">
-                  Belum ada {title.toLowerCase()} yang dipilih
+                <div className="text-center py-6 text-gray-400">
+                  <ClipboardList size={24} className="mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">Belum ada {title.toLowerCase()} yang dipilih</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium flex items-center">
-                <Clock className={`mr-1.5 ${modalConfig[type].textColor}`} size={16} />
+          {/* Recent Items Section */}
+          <div className="mb-6">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
+              <Clock size={16} className="text-gray-500" />
                 {title} Terakhir Digunakan
               </label>
-              {recentItems.length > 0 && (
-                <div className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
-                  {recentItems.length} item
-                </div>
-              )}
-            </div>
-            <div className={`flex flex-wrap gap-2 border border-gray-200 rounded-lg p-3 min-h-[60px] ${modalConfig[type].bgColor} bg-opacity-20`}>
-              {recentItems.length > 0 ? (
-                recentItems.map((item, index) => (
-                  <div
-                    key={index}
-                    className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer border border-gray-100 ${modalConfig[type].hoverColor} transition-colors duration-200 flex items-center animate-fade-in`}
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                    onClick={() => onSelectItem(type, { value: item, label: item })}
-                  >
-                    <PlusCircle className={`mr-1.5 ${modalConfig[type].textColor}`} size={14} />
+            <div className="flex flex-wrap gap-2">
+              {recentItems.length > 0 ? recentItems.map((item, idx) => (
+                <button 
+                  key={idx} 
+                  className="bg-white rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-slate-50 hover:shadow-md transition-all duration-200 flex items-center gap-2 shadow-sm" 
+                  onClick={() => {
+                    if (type === 'medication') {
+                      // For medications, pass the string directly to handleSelectItem
+                      onSelectItem(type, item);
+                    } else {
+                      // For other types, pass as object
+                      onSelectItem(type, { value: item, label: item });
+                    }
+                  }}
+                >
+                  <PlusCircle size={14} className="text-gray-400" />
                     {item}
-                  </div>
-                ))
-              ) : (
-                <div className="text-sm text-gray-500 flex items-center justify-center w-full py-3">
-                  Belum ada riwayat {title.toLowerCase()}
-                </div>
+                </button>
+              )) : (
+                <div className="text-sm text-gray-400 italic">Belum ada riwayat penggunaan</div>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center"
+              className="px-6 py-3 text-sm font-semibold text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-xl transition-all duration-200 flex items-center gap-2"
             >
-              <X className="mr-1.5" size={16} />
+              <div className="w-4 h-4 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center">
+                <X size={12} className="text-white" />
+              </div>
               Batal
             </button>
             <button
               onClick={() => onSave(type, medicationDetails)}
               disabled={loading}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors duration-200 flex items-center ${loading ? 'bg-gray-400 cursor-not-allowed' : `bg-gradient-to-r ${modalConfig[type].color} hover:shadow-md`}`}
+              className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 ${
+                loading 
+                  ? 'bg-gray-300 text-gray-400 cursor-not-allowed' 
+                  : `bg-gradient-to-r from-${modalConfig[type].accent}-600 to-${modalConfig[type].accent}-700 hover:from-${modalConfig[type].accent}-700 hover:to-${modalConfig[type].accent}-800 text-white shadow-lg hover:shadow-xl`
+              }`}
             >
               {loading ? (
                 <>
-                  <RefreshCw className="mr-1.5 animate-spin" size={16} />
+                  <RefreshCw size={16} className="animate-spin" />
                   Menyimpan...
                 </>
               ) : (
                 <>
-                  <Save className="mr-1.5" size={16} />
-                  Simpan
+                  <Save size={16} />
+                  Simpan {title}
                 </>
               )}
             </button>
@@ -511,13 +548,19 @@ const MedicalRecordModal = ({ type, title, show, onClose, onSave, selectedItems,
 // InputRM Component
 const InputRM = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
   const [patients, setPatients] = useState([]);
   const [patientOptions, setPatientOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [dateFilter, setDateFilter] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const selectedPatientData = useMemo(() => {
+    if (!selectedAppointmentId) return null;
+    return patients.find(p => p.appointment_id === selectedAppointmentId) || null;
+  }, [selectedAppointmentId, patients]);
 
   const [vitals, setVitals] = useState({
     height: 'Belum diisi',
@@ -548,6 +591,24 @@ const InputRM = () => {
       [type]: { ...prev[type], ...updates },
     }));
   }, []);
+
+  // Function to reset modal state
+  const resetModalState = useCallback((type) => {
+    setModalState((prev) => ({
+      ...prev,
+      [type]: { 
+        show: false, 
+        selected: [], 
+        recent: prev[type].recent, // Keep recent items
+        details: type === 'medication' ? {} : undefined 
+      },
+    }));
+  }, []);
+
+  // Function to handle modal close with reset
+  const handleModalClose = useCallback((type) => {
+    resetModalState(type);
+  }, [resetModalState]);
 
   const handleSearchMedicalRecord = useCallback(async (type, term) => {
     if (term.length < 2) {
@@ -597,30 +658,80 @@ const InputRM = () => {
           setError('Token autentikasi tidak ditemukan. Silakan login kembali.');
           return;
         }
-        const payload = {
-          visit_id: visitHistory[0]?.visit_id,
-          items: modalState[type].selected.map((item) => ({
-            name: item,
-            ...(type === 'medication' && details[item]
-              ? {
-                  dosage: details[item].dosage,
-                  frequency: details[item].frequency,
-                  duration: details[item].duration,
-                }
-              : {}),
-          })),
-        };
-        console.log('Payload before send:', payload); // Debug
-        if (!payload.visit_id) {
+        
+        console.log(`Saving ${type} - selected items:`, modalState[type].selected); // Debug log
+        
+        // Get the correct visit_id for the current appointment
+        let visit_id = null;
+        
+        if (selectedPatientData?.appointment_id) {
+          try {
+            const visitResponse = await axios.get(`${config.apiUrl}/medical/visits/appointment/${selectedPatientData.appointment_id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            
+            if (visitResponse.data.success) {
+              visit_id = visitResponse.data.data.visit_id;
+              console.log('Found visit_id from appointment:', visit_id);
+            }
+          } catch (error) {
+            console.warn('Could not get visit_id from appointment, falling back to latest visit');
+          }
+        }
+        
+        // Fallback to latest visit if no appointment-specific visit found
+        if (!visit_id && visitHistory.length > 0) {
+          visit_id = visitHistory[0]?.visit_id;
+          console.log('Using latest visit_id as fallback:', visit_id);
+        }
+        
+        if (!visit_id) {
           setError('Tidak ada kunjungan untuk pasien ini. Silakan buat kunjungan terlebih dahulu.');
           return;
         }
+        
+        let payload;
+        
+        if (type === 'medication') {
+          // For medications, send objects with details
+          payload = {
+            visit_id: visit_id,
+          items: modalState[type].selected.map((item) => ({
+            name: item,
+                ...(details[item] ? {
+                  dosage: details[item].dosage,
+                  frequency: details[item].frequency,
+                  duration: details[item].duration,
+                } : {}),
+          })),
+        };
+        } else {
+          // For procedures and diagnoses, send array of strings
+          payload = {
+            visit_id: visit_id,
+            items: modalState[type].selected,
+          };
+        }
+        
+        console.log('Payload before send:', payload); // Debug
+        console.log(`Payload type: ${type}, items count: ${payload.items.length}`); // Debug log
+        console.log('Payload items:', payload.items); // Debug log
+        
         const endpoint = `${config.apiUrl}/medical/visit-${type}s`;
         const response = await axios.post(endpoint, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.data.success) {
-          updateModalState(type, { selected: [], show: false, details: {} });
+          console.log(`Successfully saved ${type}:`, response.data); // Debug log
+          
+          // Update appointment status to examined using appointment_code
+          if (selectedPatientData?.appointment_id) {
+            await updateAppointmentStatus(selectedPatientData.appointment_id);
+          }
+          
+          // Reset modal state after successful save
+          resetModalState(type);
+          
           setMedicalRecord((prev) => {
             // For medications, store the full object with details
             if (type === 'medication') {
@@ -636,14 +747,16 @@ const InputRM = () => {
                 }))
               };
             } else {
-              // For other types, just store the name
+              // For other types, store the full value (including code for diagnoses)
               return {
                 ...prev,
-                [`${type}s`]: payload.items.map((item) => item.name),
+                [`${type}s`]: payload.items,
               };
             }
           });
-          await fetchPatientData(selectedPatientId);
+          
+          // Fetch updated data from server to ensure consistency
+          await fetchPatientData(selectedPatientData?.no_rm);
         } else {
           setError(response.data.message || `Gagal menyimpan ${type}`);
         }
@@ -654,13 +767,15 @@ const InputRM = () => {
         setLoading(false);
       }
     },
-    [visitHistory, modalState, selectedPatientId, updateModalState]
+    [visitHistory, modalState, selectedPatientData, updateModalState]
   );
 
   const handleSelectItem = useCallback(
     (type, item) => {
       if (!item) return;
       const selectedItems = modalState[type].selected;
+      
+      console.log(`handleSelectItem - type: ${type}, item:`, item); // Debug log
       
       // Handle medication with details
       if (type === 'medication' && item.details) {
@@ -679,12 +794,40 @@ const InputRM = () => {
             [item.value]: item.details
           }
         });
+      } else if (type === 'medication' && typeof item === 'string') {
+        // Handle medication from recent items (string format)
+        if (selectedItems.includes(item)) return;
+        
+        updateModalState(type, {
+          selected: [...selectedItems, item],
+          recent: [item, ...modalState[type].recent.filter((rec) => rec !== item)].slice(0, 10),
+        });
+        
+        // For recent items, we don't have details, so we'll add empty details
+        updateModalState(type, {
+          details: {
+            ...modalState[type].details,
+            [item]: {
+              dosage: 'Belum diisi',
+              frequency: 'Belum diisi',
+              duration: 'Belum diisi'
+            }
+          }
+        });
       } else {
         // Handle regular items (procedures, diagnoses)
-        if (selectedItems.includes(item.value)) return;
+        // For diagnoses, we want to store the full value (code + name)
+        const itemValue = item.value || item;
+        console.log(`Selected item value: ${itemValue}`); // Debug log
+        
+        if (selectedItems.includes(itemValue)) {
+          console.log(`Item already selected: ${itemValue}`); // Debug log
+          return;
+        }
+        
         updateModalState(type, {
-          selected: [...selectedItems, item.value],
-          recent: [item.value, ...modalState[type].recent.filter((rec) => rec !== item.value)].slice(0, 10),
+          selected: [...selectedItems, itemValue],
+          recent: [itemValue, ...modalState[type].recent.filter((rec) => rec !== itemValue)].slice(0, 10),
         });
       }
     },
@@ -708,13 +851,13 @@ const InputRM = () => {
     [modalState, updateModalState]
   );
 
-  const EditVitalsModal = ({ vitals, visitId, onSave, onClose }) => {
+  const EditVitalsModal = ({ vitals, visitId, onSave, onClose, updateAppointmentStatus }) => {
     const [tempVitals, setTempVitals] = useState({
-      height: vitals.height.replace(' cm', '') || '',
-      weight: vitals.weight.replace(' kg', '') || '',
-      heartRate: vitals.heartRate.replace(' bpm', '') || '',
-      bloodSugar: vitals.bloodSugar.replace(' mg/dl', '') || '',
-      temperature: vitals.temperature.replace('° C', '') || '',
+      height: vitals.height === 'Belum diisi' ? '' : vitals.height.replace(' cm', ''),
+      weight: vitals.weight === 'Belum diisi' ? '' : vitals.weight.replace(' kg', ''),
+      heartRate: vitals.heartRate === 'Belum diisi' ? '' : vitals.heartRate.replace(' bpm', ''),
+      bloodSugar: vitals.bloodSugar === 'Belum diisi' ? '' : vitals.bloodSugar.replace(' mg/dl', ''),
+      temperature: vitals.temperature === 'Belum diisi' ? '' : vitals.temperature.replace('° C', ''),
     });
     const [errorMessage, setErrorMessage] = useState(null);
 
@@ -738,25 +881,56 @@ const InputRM = () => {
         setLoading(true);
         setErrorMessage(null);
         const token = localStorage.getItem('token');
-        if (!visitId) {
+        
+        // Get the correct visit_id for the current appointment
+        let finalVisitId = visitId;
+        
+        if (!finalVisitId && selectedPatientData?.appointment_id) {
+          try {
+            const visitResponse = await axios.get(`${config.apiUrl}/medical/visits/appointment/${selectedPatientData.appointment_id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            
+            if (visitResponse.data.success) {
+              finalVisitId = visitResponse.data.data.visit_id;
+              console.log('Found visit_id for vitals from appointment:', finalVisitId);
+            }
+          } catch (error) {
+            console.warn('Could not get visit_id from appointment for vitals');
+          }
+        }
+        
+        if (!finalVisitId) {
           setErrorMessage('Tidak ada kunjungan untuk pasien ini. Silakan buat kunjungan terlebih dahulu.');
           return;
         }
+        
         if (!isFormValid()) {
           setErrorMessage('Semua field wajib diisi.');
           return;
         }
         const payload = {
-          visit_id: visitId,
+          visit_id: finalVisitId,
           height: tempVitals.height,
           weight: tempVitals.weight,
           heart_rate: tempVitals.heartRate,
           blood_sugar: tempVitals.bloodSugar,
           temperature: tempVitals.temperature,
         };
-        await axios.post(`${config.apiUrl}/medical/editvitals`, payload, {
+        
+        console.log('Sending vitals payload:', payload); // Debug log
+        
+        const response = await axios.post(`${config.apiUrl}/medical/editvitals`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        
+        console.log('Vitals response:', response.data); // Debug log
+        
+        // Update appointment status to examined using appointment_code
+        if (selectedPatientData?.appointment_id) {
+          await updateAppointmentStatus(selectedPatientData.appointment_id);
+        }
+        
         onSave({
           height: tempVitals.height ? `${tempVitals.height} cm` : 'Belum diisi',
           weight: tempVitals.weight ? `${tempVitals.weight} kg` : 'Belum diisi',
@@ -764,55 +938,118 @@ const InputRM = () => {
           bloodSugar: tempVitals.bloodSugar ? `${tempVitals.bloodSugar} mg/dl` : 'Belum diisi',
           temperature: tempVitals.temperature ? `${tempVitals.temperature}° C` : 'Belum diisi',
         });
-        await fetchPatientData(selectedPatientId);
+        await fetchPatientData(selectedPatientData?.no_rm);
         onClose();
       } catch (error) {
         console.error('Error saving vitals:', error);
-        setErrorMessage('Gagal menyimpan vital signs. Silakan coba lagi.');
+        const errorMsg = error.response?.data?.message || 'Gagal menyimpan vital signs. Silakan coba lagi.';
+        setErrorMessage(errorMsg);
       } finally {
         setLoading(false);
       }
     };
 
     return (
-      <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-96">
-          <h2 className="text-xl font-bold mb-4">Edit Vital Signs</h2>
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto p-0 animate-fade-in">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 rounded-t-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <Activity className="text-white" size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Edit Tanda Vital</h2>
+                  <p className="text-sm text-gray-600">Update data vital signs pasien</p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose} 
+                className="p-2 rounded-xl hover:bg-white/50 text-gray-400 hover:text-gray-700 transition-all duration-200"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="p-6">
           {errorMessage && (
-            <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
-          )}
-          <div className="space-y-4">
-            {[
-              { label: 'Tinggi (cm)', field: 'height' },
-              { label: 'Berat (kg)', field: 'weight' },
-              { label: 'Detak Jantung (bpm)', field: 'heartRate' },
-              { label: 'Gula Darah (mg/dl)', field: 'bloodSugar' },
-              { label: 'Suhu (°C)', field: 'temperature' },
-            ].map(({ label, field }) => (
-              <div key={field}>
-                <label className="block text-sm font-medium mb-1">{label}</label>
+              <div className="mb-6 p-4 bg-red-50 rounded-xl text-red-600 text-sm shadow-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  {errorMessage}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {[
+                { label: 'Tinggi Badan', field: 'height', unit: 'cm', icon: <Ruler size={18} className="text-blue-500" />, color: 'from-blue-500 to-indigo-600' },
+                { label: 'Berat Badan', field: 'weight', unit: 'kg', icon: <Weight size={18} className="text-green-500" />, color: 'from-green-500 to-emerald-600' },
+                { label: 'Detak Jantung', field: 'heartRate', unit: 'bpm', icon: <Heart size={18} className="text-red-500" />, color: 'from-red-500 to-pink-600' },
+                { label: 'Gula Darah', field: 'bloodSugar', unit: 'mg/dl', icon: <Droplet size={18} className="text-purple-500" />, color: 'from-purple-500 to-indigo-600' },
+                { label: 'Suhu Tubuh', field: 'temperature', unit: '°C', icon: <Thermometer size={18} className="text-orange-500" />, color: 'from-amber-500 to-orange-600' },
+              ].map(({ label, field, unit, icon, color }) => (
+                <div key={field} className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <div className={`w-5 h-5 bg-gradient-to-br ${color} rounded-lg flex items-center justify-center shadow-sm`}>
+                      {React.cloneElement(icon, { size: 12, className: "text-white" })}
+                    </div>
+                    {label}
+                  </label>
+                  <div className="relative">
                 <input
                   type="number"
                   value={tempVitals[field]}
                   onChange={(e) => handleInputChange(field, e.target.value)}
-                  className="w-full px-3 py-2 border rounded"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      placeholder={`Masukkan ${label.toLowerCase()}`}
                 />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 font-medium">
+                      {unit}
+                    </div>
+                  </div>
               </div>
             ))}
-            <div className="flex justify-end space-x-2">
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+                className="px-6 py-3 text-sm font-semibold text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-xl transition-all duration-200 flex items-center gap-2"
               >
+                <div className="w-4 h-4 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center">
+                  <X size={12} className="text-white" />
+                </div>
                 Batal
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!isFormValid()}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${isFormValid() ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                disabled={!isFormValid() || loading}
+                className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 ${
+                  isFormValid() && !loading 
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl' 
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
               >
-                <Save size={18} className={isFormValid() ? 'text-white' : 'text-gray-500'} />
-                Simpan
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                      <RefreshCw size={12} className="animate-spin text-white" />
+                    </div>
+                    Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                      <Save size={12} className="text-white" />
+                    </div>
+                    Simpan Perubahan
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -835,14 +1072,18 @@ const InputRM = () => {
       });
       if (response.data.success) {
         const options = response.data.data.map((patient) => ({
-          value: patient.no_rm,
+          value: patient.appointment_id,
           label: `${patient.nama_lengkap} (${patient.no_rm})`,
           patient: {
             id: patient.id,
+            appointment_id: patient.appointment_id,
             no_rm: patient.no_rm,
             name: patient.nama_lengkap,
             age: `${patient.umur} Tahun`,
+            appointmentTime: patient.appointment_time,
+            doctorName: patient.doctor_name || 'Tidak ada dokter',
             complaint: '',
+            status: patient.status || 'scheduled',
           },
         }));
         setPatientOptions(options);
@@ -865,7 +1106,7 @@ const InputRM = () => {
   const handlePatientSelect = (selectedOption) => {
     if (!selectedOption) {
       setSelectedPatient(null);
-      setSelectedPatientId(null);
+      setSelectedAppointmentId(null);
       setVitals({
         height: 'Belum diisi',
         weight: 'Belum diisi',
@@ -874,9 +1115,6 @@ const InputRM = () => {
         temperature: 'Belum diisi',
       });
       setMedicalRecord({ procedures: [], diagnoses: [], medications: [] });
-      updateModalState('procedure', { selected: [], recent: [] });
-      updateModalState('diagnose', { selected: [], recent: [] });
-      updateModalState('medication', { selected: [], recent: [] });
       setVisitHistory([]);
       setError(null);
       return;
@@ -884,7 +1122,7 @@ const InputRM = () => {
 
     const patient = selectedOption.patient;
     setSelectedPatient(patient.name);
-    setSelectedPatientId(patient.no_rm);
+    setSelectedAppointmentId(patient.appointment_id);
     setVitals({
       height: 'Belum diisi',
       weight: 'Belum diisi',
@@ -893,9 +1131,6 @@ const InputRM = () => {
       temperature: 'Belum diisi',
     });
     setMedicalRecord({ procedures: [], diagnoses: [], medications: [] });
-    updateModalState('procedure', { selected: [], recent: [] });
-    updateModalState('diagnose', { selected: [], recent: [] });
-    updateModalState('medication', { selected: [], recent: [] });
     setVisitHistory([]);
     setError(null);
     fetchPatientData(patient.no_rm);
@@ -915,20 +1150,45 @@ const InputRM = () => {
       
       if (response.data.success) {
         const options = response.data.data.map((patient) => ({
-          value: patient.no_rm,
+          value: patient.appointment_code,
           label: `${patient.nama_lengkap} (${patient.no_rm})`,
           patient: {
             id: patient.id,
+            appointment_id: patient.appointment_code,
             no_rm: patient.no_rm,
             name: patient.nama_lengkap,
             age: `${patient.umur} Tahun`,
             appointmentTime: patient.appointment_time,
             doctorName: patient.doctor_name || 'Tidak ada dokter',
             complaint: '',
+            status: patient.status,
           },
         }));
-        setPatientOptions(options);
-        setPatients(options.map((option) => option.patient));
+        
+        // Sort patients by status priority
+        const statusPriority = {
+          'examined': 1,      // Highest priority - ready for medical record
+          'confirmed': 2,     // Second priority - confirmed
+          'checked-in': 3,    // Third priority - checked in
+          'scheduled': 4,     // Fourth priority - scheduled
+          'dispensed': 5,     // Fifth priority - dispensed
+          'completed': 6,     // Lowest priority - completed/final
+          'cancelled': 7      // Lowest priority - cancelled
+        };
+        
+        const sortedOptions = options.sort((a, b) => {
+          const priorityA = statusPriority[a.patient.status] || 8;
+          const priorityB = statusPriority[b.patient.status] || 8;
+          
+          if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+          }
+          
+          return a.patient.name.localeCompare(b.patient.name);
+        });
+        
+        setPatientOptions(sortedOptions);
+        setPatients(sortedOptions.map((option) => option.patient));
         
         // Clear any previous errors
         setError(null);
@@ -952,13 +1212,26 @@ const InputRM = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const combinedResponse = await axios.get(`${config.apiUrl}/medical/patients/${patientNoRM}/combined-data`, {
+      
+      // Include appointment_code in the request if available
+      const appointmentCode = selectedPatientData?.appointment_id;
+      const url = appointmentCode 
+        ? `${config.apiUrl}/medical/patients/${patientNoRM}/combined-data?appointment_code=${appointmentCode}`
+        : `${config.apiUrl}/medical/patients/${patientNoRM}/combined-data`;
+        
+      const combinedResponse = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
   
       if (combinedResponse.data.success && combinedResponse.data.data) {
-        const { vitals: vitalData, procedures, diagnoses, medications } = combinedResponse.data.data;
-        console.log('Fetched medications:', medications); // Debug: Check the data structure
+        const { vitals: vitalData, procedures, diagnoses, medications, visit_id } = combinedResponse.data.data;
+        console.log('Fetched data:', { procedures, diagnoses, medications, visit_id }); // Debug: Check the data structure
+        
+        // Remove duplicates from diagnoses if any
+        const uniqueDiagnoses = diagnoses ? [...new Set(diagnoses)] : [];
+        console.log('Unique diagnoses:', uniqueDiagnoses); // Debug log
+        console.log('Raw diagnoses from server:', diagnoses); // Debug log for raw data
+        
         setVitals({
           height: vitalData?.height ? `${vitalData.height} cm` : 'Belum diisi',
           weight: vitalData?.weight ? `${vitalData.weight} kg` : 'Belum diisi',
@@ -966,10 +1239,11 @@ const InputRM = () => {
           bloodSugar: vitalData?.blood_sugar ? `${vitalData.blood_sugar} mg/dl` : 'Belum diisi',
           temperature: vitalData?.temperature ? `${vitalData.temperature}° C` : 'Belum diisi',
         });
+        
         // Format medications as objects with name and details for the medical record
         setMedicalRecord({
           procedures: procedures || [],
-          diagnoses: diagnoses || [],
+          diagnoses: uniqueDiagnoses,
           medications: medications.map(m => ({
             name: m.name,
             details: {
@@ -982,7 +1256,7 @@ const InputRM = () => {
         
         // Update modal state for procedures and diagnoses
         updateModalState('procedure', { selected: procedures || [] });
-        updateModalState('diagnose', { selected: diagnoses || [] });
+        updateModalState('diagnose', { selected: uniqueDiagnoses });
         
         // Update modal state for medications with their details
         updateModalState('medication', {
@@ -1009,6 +1283,7 @@ const InputRM = () => {
             const visitDate = new Date(visit.visit_date);
             return {
               visit_id: visit.visit_id,
+              appointment_id: visit.appointment_id, // Include appointment_id
               month: format(visitDate, 'MMM'),
               day: format(visitDate, 'd'),
               year: format(visitDate, 'yyyy'),
@@ -1039,364 +1314,582 @@ const InputRM = () => {
 
   useEffect(() => {
     fetchPatients();
+    // Close patient detail when date changes to avoid showing outdated info
+    setSelectedAppointmentId(null);
+    setSelectedPatient(null);
   }, [dateFilter]); // Re-fetch when date filter changes
 
+  // Clear notifications when patient or date changes
+  useEffect(() => {
+    setError(null);
+    setSuccessMessage(null);
+  }, [selectedAppointmentId, dateFilter]);
+
   const activeModalType = ['procedure', 'diagnose', 'medication'].find((type) => modalState[type].show);
+
+  // Handle date change with validation
+  const handleDateChange = useCallback((newDate) => {
+    if (!newDate) return;
+    
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(newDate)) {
+      console.warn('Invalid date format:', newDate);
+      return;
+    }
+    
+    // Validate date range
+    const selectedDate = new Date(newDate);
+    const minDate = new Date('2020-01-01');
+    const maxDate = new Date('2030-12-31');
+    
+    if (selectedDate < minDate || selectedDate > maxDate) {
+      console.warn('Date out of range:', newDate);
+      return;
+    }
+    
+    setDateFilter(newDate);
+  }, []);
+
+  const handleComplete = async () => {
+    if (selectedPatientData) {
+      try {
+        setLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+        await updateAppointmentStatus(selectedPatientData.appointment_id);
+        await fetchPatients(); // Refresh patient list to update status
+        setSuccessMessage('Pemeriksaan pasien berhasil diselesaikan');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (error) {
+        console.error('Error completing appointment:', error);
+        setError('Gagal menyelesaikan pemeriksaan pasien');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (selectedPatientData) {
+      try {
+        setLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+        const token = localStorage.getItem('token');
+        await axios.post(
+          `${config.apiUrl}/medical/reactivate-appointment`,
+          { appointment_code: selectedPatientData.appointment_id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        await fetchPatients(); // Refresh patient list to update status
+        setSuccessMessage('Pemeriksaan pasien berhasil diaktifkan kembali');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (error) {
+        console.error('Error reactivating appointment:', error);
+        setError('Gagal mengaktifkan kembali pemeriksaan');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Helper function to update appointment status
+  const updateAppointmentStatus = useCallback(async (appointmentCode) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No token found for appointment status update');
+        return false;
+      }
+
+      const response = await axios.post(
+        `${config.apiUrl}/medical/update-appointment-status`,
+        { appointment_code: appointmentCode },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        console.log('Appointment status updated successfully:', response.data);
+        return true;
+      } else {
+        console.warn('Failed to update appointment status:', response.data.message);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      return false;
+    }
+  }, []);
+
+  const isExamined = selectedPatientData?.status === 'examined';
+  const isCompleted = selectedPatientData?.status === 'completed';
+  const isReadOnly = isExamined || isCompleted;
 
   return (
     <PageTemplate>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
-      <div className="mx-auto p-4">
-        {/* Modern Header with Gradient Background */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl shadow-md p-6 mb-8 text-white animate-fade-in">
+      <div className="mx-auto p-4 lg:p-6 bg-slate-50 min-h-screen">
+        {/* Modern Header */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold flex items-center">
-                <ClipboardList className="mr-3" size={28} />
+              <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mr-3 shadow-lg">
+                  <ClipboardList className="text-white" size={30} />
+                </div>
                 Input Rekam Medis
               </h1>
-              <p className="mt-1 text-blue-100">Kelola data rekam medis pasien dengan mudah</p>
+              <p className="mt-1 text-gray-500">Pilih pasien dari antrian untuk memulai sesi rekam medis.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full sm:w-auto">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
+                    <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <Calendar className="text-white" size={14} />
+                    </div>
+                  </div>
                 <input
                   type="date"
                   value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="pl-10 pr-4 py-2 rounded-lg border border-blue-400 bg-blue-50/30 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50"
-                />
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-100" size={18} />
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="w-full sm:w-auto pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer hover:border-gray-400"
+                    min="2020-01-01"
+                    max="2030-12-31"
+                    title="Pilih tanggal untuk melihat antrian pasien"
+                  />
+                </div>
+                <button
+                  onClick={() => handleDateChange(format(new Date(), 'yyyy-MM-dd'))}
+                  className={`w-full sm:w-auto px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1 ${
+                    dateFilter === format(new Date(), 'yyyy-MM-dd') 
+                      ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border border-blue-200' 
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                  }`}
+                  title="Kembali ke hari ini"
+                >
+                  <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <Calendar size={10} className="text-white" />
+                  </div>
+                  Hari Ini
+                </button>
               </div>
               <button 
                 onClick={fetchPatients}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-lg transition-all duration-200"
+                className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 font-semibold py-2.5 px-4 rounded-lg transition-all duration-200"
                 disabled={loading}
               >
-                <RefreshCw className={`${isRefreshing ? 'animate-spin' : ''}`} size={18} />
-                Refresh
+                <div className="w-4 h-4 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center">
+                  <RefreshCw className={`${isRefreshing ? 'animate-spin' : ''} text-white`} size={10} />
+                </div>
+                <span>Refresh</span>
               </button>
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-10 md:grid-cols-10 gap-4">
-          <div className="md:col-span-3">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6 animate-fade-in">
-              <h2 className="text-lg font-bold mb-4 flex items-center text-gray-800">
-                <UserCircle className="mr-2 text-blue-500" size={22} />
-                Daftar Pasien
-              </h2>
-              <div className="mb-6 relative">
-                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
-                  <Search className="text-gray-400" size={18} />
+
+        {/* Notifications */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl text-green-700 shadow-sm animate-fade-in">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                <Check size={12} className="text-white" />
                 </div>
+              <span className="font-medium">{successMessage}</span>
+                </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl text-red-700 shadow-sm animate-fade-in">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
+                <X size={12} className="text-white" />
+              </div>
+              <span className="font-medium">{error}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Patient List Column */}
+          <div className="lg:col-span-4 xl:col-span-3">
+            <div className="bg-white rounded-xl shadow-lg p-5">
+              <h2 className="text-xl font-bold mb-4 flex items-center text-gray-800">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3 shadow-lg">
+                  <UserCircle className="text-white" size={20} />
+                </div>
+                Antrian Pasien
+              </h2>
+              <div className="mb-4">
                 <Select
                   isClearable
                   isSearchable
-                  placeholder="Cari pasien berdasarkan nama atau no. RM"
+                  placeholder="Cari pasien..."
                   options={patientOptions}
                   onChange={handlePatientSelect}
-                  onInputChange={(value) => {
-                    if (value.length >= 3) {
-                      // searchPatients(value);
-                    }
-                  }}
-                  className="basic-single"
-                  classNamePrefix="select"
                   styles={{
-                    control: (baseStyles, state) => ({
-                      ...baseStyles,
-                      borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
-                      boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                      borderRadius: '0.5rem',
-                      paddingLeft: '2rem',
-                      '&:hover': {
-                        borderColor: '#3b82f6'
-                      }
-                    }),
-                    option: (styles, { isSelected, isFocused }) => ({
-                      ...styles,
-                      backgroundColor: isSelected ? '#3b82f6' : isFocused ? '#dbeafe' : null,
-                      color: isSelected ? 'white' : '#374151',
-                      ':active': {
-                        backgroundColor: '#3b82f6',
-                        color: 'white'
-                      }
-                    })
+                    control: (base, state) => ({ ...base, borderRadius: '0.5rem', padding: '0.25rem', border: state.isFocused ? '2px solid #3b82f6' : '2px solid #e5e7eb', boxShadow: 'none', '&:hover': { borderColor: '#3b82f6' } }),
+                    option: (base, state) => ({ ...base, borderRadius: '0.375rem', margin: '0 4px', backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#dbeafe' : 'white', color: state.isSelected ? 'white' : 'black' }),
+                    menu: (base) => ({...base, borderRadius: '0.5rem', zIndex: 50})
                   }}
                 />
               </div>
-              <div className="space-y-4 custom-scrollbar overflow-y-auto" style={{ maxHeight: '60vh' }}>
-                {loading ? (
-                  <div className="text-center p-8 bg-gray-50 rounded-lg animate-pulse">
-                    <RefreshCw className="mx-auto mb-3 text-blue-400 animate-spin" size={24} />
-                    <div className="text-gray-500">Memuat data pasien...</div>
+              <div className="space-y-3 custom-scrollbar overflow-y-auto" style={{ maxHeight: '65vh' }}>
+                {loading && patients.length === 0 ? (
+                  <div className="text-center p-8">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                      <RefreshCw className="text-white animate-spin" size={24} />
                   </div>
-                ) : error ? (
-                  <div className="text-center p-6 bg-red-50 rounded-lg border border-red-100 animate-fade-in">
-                    <div className="text-red-500 font-medium">{error}</div>
+                    <p className="mt-2 text-gray-500">Memuat antrian...</p>
                   </div>
                 ) : patients.length === 0 ? (
-                  <div className="text-center p-8 bg-gray-50 rounded-lg animate-fade-in">
-                    <UserCircle className="mx-auto mb-3 text-gray-300" size={32} />
-                    <div className="text-gray-500">Tidak ada pasien yang terdaftar pada tanggal ini</div>
-                    <div className="text-xs text-gray-400 mt-2">Coba ubah tanggal filter atau tambahkan pasien baru</div>
+                  <div className="text-center p-8 text-gray-500">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <UserCircle className="text-gray-400" size={32} />
+                    </div>
+                    <p className="mt-2">Tidak ada pasien dalam antrian.</p>
                   </div>
                 ) : (
                   patients.map((patient, index) => (
                     <div
-                      key={index}
-                      className={`p-4 border rounded-xl mb-3 cursor-pointer transition-all duration-200 animate-fade-in shadow-sm ${selectedPatientId === patient.no_rm ? 'bg-gradient-to-r from-blue-50 to-white border-blue-300' : 'bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/30'}`}
-                      onClick={() => handlePatientSelect({ value: patient.no_rm, label: patient.name, patient })}
-                      style={{ animationDelay: `${index * 0.05}s` }}
+                      key={patient.appointment_id}
+                      className={`p-4 border-l-4 rounded-r-lg cursor-pointer transition-all duration-200 ${selectedAppointmentId === patient.appointment_id ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md' : 'border-transparent bg-gray-50 hover:bg-gray-100 shadow-sm'}`}
+                      onClick={() => handlePatientSelect({ patient })}
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-start">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${selectedPatientId === patient.no_rm ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
-                            {patient.name.charAt(0).toUpperCase()}
-                          </div>
+                      <div className="flex justify-between items-center">
                           <div>
-                            <div className="font-medium text-gray-900">{patient.name}</div>
-                            <div className="text-xs text-gray-500 flex items-center mt-0.5">
-                              <ClipboardList className="mr-1" size={12} />
-                              No. RM: {patient.no_rm}
+                          <p className="font-bold text-gray-900">{patient.name}</p>
+                          <p className="text-sm text-gray-500">RM: {patient.no_rm}</p>
                             </div>
+                        <div className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                          patient.status === 'completed'
+                            ? 'bg-gradient-to-r from-slate-200 to-slate-300 text-slate-800 border border-slate-300'
+                            : patient.status === 'examined' 
+                            ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200'
+                            : patient.status === 'dispensed'
+                            ? 'bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-800 border border-cyan-200'
+                            : patient.status === 'confirmed'
+                            ? 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200'
+                            : patient.status === 'checked-in'
+                            ? 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 border border-indigo-200'
+                            : patient.status === 'cancelled'
+                            ? 'bg-gradient-to-r from-red-100 to-pink-100 text-red-800 border border-red-200'
+                            : selectedAppointmentId === patient.appointment_id 
+                              ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200' 
+                              : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-300'
+                          }`}>
+                          {patient.status === 'completed' ? 'Final' : 
+                           patient.status === 'examined' ? 'Selesai' : 
+                           patient.status === 'dispensed' ? 'Dispensed' :
+                           patient.status === 'confirmed' ? 'Confirmed' :
+                           patient.status === 'checked-in' ? 'Checked In' :
+                           patient.status === 'cancelled' ? 'Cancelled' :
+                           patient.status === 'scheduled' ? 'Menunggu' : patient.status}
                           </div>
                         </div>
-                        <div className={`text-xs px-2 py-1 rounded-full ${selectedPatientId === patient.no_rm ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-800'}`}>
-                          {patient.status || 'Menunggu'}
+                      <div className="mt-2 text-sm text-gray-600 flex items-center">
+                        <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
+                          <Clock size={10} className="text-white" />
                         </div>
+                        <span>{patient.appointmentTime} - Dr. {patient.doctorName}</span>
                       </div>
-                      <div className="mt-3 text-xs text-gray-600 grid grid-cols-2 gap-2">
-                        <div className="flex items-center">
-                          <User className="mr-1.5 text-blue-500" size={12} />
-                          <span className="font-medium mr-1">Umur:</span> {patient.age || '-'}
                         </div>
-                        <div className="flex items-center">
-                          {patient.gender === 'Laki-laki' ? 
-                            <User className="mr-1.5 text-blue-500" size={12} /> : 
-                            <User className="mr-1.5 text-pink-500" size={12} />
-                          }
-                          <span className="font-medium mr-1">Gender:</span> {patient.gender || '-'}
-                        </div>
-                        {patient.appointment_time && (
-                          <div className="flex items-center">
-                            <Clock className="mr-1.5 text-blue-500" size={12} />
-                            <span className="font-medium mr-1">Jam:</span> {patient.appointment_time}
-                          </div>
-                        )}
-                        {patient.doctor_name && (
-                          <div className="flex items-center">
-                            <Stethoscope className="mr-1.5 text-blue-500" size={12} />
-                            <span className="font-medium mr-1">Dokter:</span> {patient.doctor_name}
-                          </div>
-                        )}
-                      </div>
-                      {selectedPatientId === patient.no_rm && (
-                        <div className="mt-3 pt-2 border-t border-blue-100 flex justify-end">
-                          <div className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full flex items-center">
-                            <ChevronRight size={12} />
-                            <span className="ml-0.5">Terpilih</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   ))
                 )}
+                          </div>
+                      </div>
+                          </div>
+          
+          {/* Main Content Column */}
+          <div className="lg:col-span-8 xl:col-span-9">
+            {!selectedPatient ? (
+              <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/10 rounded-xl border-2 border-dashed border-gray-300">
+                <div className="text-center p-12 text-gray-500">
+                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <UserCircle className="text-gray-400" size={40} />
+                        </div>
+                  <h3 className="mt-4 text-xl font-medium">Pilih Pasien</h3>
+                  <p>Silakan pilih pasien dari daftar antrian untuk melihat dan menginput data rekam medis.</p>
+                    </div>
               </div>
-            </div>
-          </div>
-          <div className="md:col-span-7">
-            {selectedPatient ? (
-              <>
-                <div className="bg-gradient-to-r from-blue-50 to-white p-5 mb-6 flex items-center rounded-xl border border-blue-100 shadow-sm animate-fade-in">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xl font-bold mr-5 shadow-md">
+            ) : (
+              <div className="animate-fade-in">
+                {/* Patient Header */}
+                <div className="bg-white p-6 mb-8 flex items-center rounded-xl shadow-lg">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mr-6 shadow-lg">
                     {selectedPatient.charAt(0)}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center">
-                      <div className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                        {patients.find((p) => p.name === selectedPatient)?.no_rm || ''}
+                    <p className="text-2xl font-bold text-gray-800">{selectedPatient}</p>
+                    <div className="flex items-center text-sm text-gray-500 mt-1 gap-4">
+                      <span className="flex items-center">
+                        <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-1.5 shadow-sm">
+                          <CreditCard size={10} className="text-white"/>
                       </div>
-                      <div className="mx-2 w-1 h-1 bg-gray-300 rounded-full"></div>
-                      <div className="text-gray-500 text-sm flex items-center">
-                        <Calendar className="mr-1" size={14} />
-                        {patients.find((p) => p.name === selectedPatient)?.age || ''}
+                        {selectedPatientData?.no_rm || ''}
+                      </span>
+                      <span className="flex items-center">
+                        <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-1.5 shadow-sm">
+                          <Calendar size={10} className="text-white"/>
                       </div>
+                        {selectedPatientData?.age || ''}
+                      </span>
+                      <span className="flex items-center">
+                        <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center mr-1.5 shadow-sm">
+                          <Stethoscope size={10} className="text-white"/>
                     </div>
-                    <div className="text-xl font-bold text-gray-800 mt-1">{selectedPatient}</div>
-                    <div className="mt-2 text-sm text-gray-600 flex items-center">
-                      <Stethoscope className="mr-1" size={14} />
-                      {patients.find((p) => p.name === selectedPatient)?.doctorName || 'Tidak ada dokter'}
+                        Dr. {selectedPatientData?.doctorName || 'N/A'}
+                      </span>
+                      <span className="flex items-center">
+                        <div className="w-4 h-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-1.5 shadow-sm">
+                          <FileText size={10} className="text-white" />
                     </div>
+                        {selectedPatientData?.appointment_id || 'N/A'}
+                      </span>
                   </div>
-                  <div className="ml-auto bg-gradient-to-r from-blue-50 to-white p-4 rounded-lg border border-blue-100 max-w-xs">
-                    <div className="text-sm font-medium text-gray-700 flex items-center mb-1">
-                      <FileText className="mr-1 text-blue-500" size={14} />
-                      Keluhan:
                     </div>
-                    <div className="text-sm text-gray-600">
+                  <div className="ml-auto pl-6 border-l border-gray-200 max-w-sm">
+                    <p className="text-sm font-semibold text-gray-700 flex items-center mb-1">
+                      <div className="w-4 h-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
+                        <FileText size={10} className="text-white" />
+                    </div>
+                      Keluhan Utama
+                    </p>
+                    <p className="text-sm text-gray-600">
                       {visitHistory.length > 0 ? visitHistory[0].notes : 'Tidak ada keluhan'}
+                    </p>
+                    </div>
+                  {/* Complete/Reactivate Button */}
+                  <div className="ml-4 pl-4 border-l border-gray-200">
+                    <button
+                      onClick={isExamined ? handleReactivate : handleComplete}
+                      disabled={loading || !selectedPatientData || isCompleted}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 w-36 justify-center ${
+                        loading || !selectedPatientData
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : isCompleted
+                          ? 'bg-gradient-to-r from-slate-500 to-gray-600 text-white shadow-lg'
+                          : isExamined
+                            ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl'
+                            : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
+                      }`}
+                      title={!selectedPatientData ? 'Pilih pasien terlebih dahulu' : isCompleted ? 'Pemeriksaan sudah final' : isExamined ? 'Aktifkan kembali pemeriksaan' : 'Selesaikan pemeriksaan pasien'}
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                          <RefreshCw size={12} className="animate-spin text-white" />
+                  </div>
+                      ) : isCompleted ? (
+                        <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Lock size={12} className="text-white" />
+                </div>
+                      ) : isExamined ? (
+                        <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                          <RefreshCw size={12} className="text-white" />
+                </div>
+                      ) : (
+                        <div className="w-4 h-4 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Check size={12} className="text-white" />
+                        </div>
+                      )}
+                      {isCompleted ? 'Final' : isExamined ? 'Reactivate' : 'Complete'}
+                    </button>
                     </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="md:col-span-1">
-                    <h2 className="text-lg font-bold mb-4 flex items-center text-gray-800">
-                      <ClipboardList className="mr-2 text-blue-500" size={20} />
-                      Rekam Medis
+                
+                {/* Main Grid for Vitals, Records, History */}
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                  {/* Left Side: Vitals & Medical Records */}
+                  <div className="lg:col-span-3 space-y-8">
+                    {/* Vital Signs Card */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-bold text-gray-800 flex items-center">
+                          <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
+                            <Activity size={16} className="text-white" />
+                          </div>
+                          Tanda Vital
                     </h2>
-                    {['procedure', 'diagnose', 'medication'].map((type, idx) => {
-                      const icons = {
-                        procedure: <Activity size={18} />,
-                        diagnose: <FileText size={18} />,
-                        medication: <Pill size={18} />
-                      };
-                      const titles = {
-                        procedure: 'Tindakan',
-                        diagnose: 'Diagnosa',
-                        medication: 'Obat'
-                      };
-                      const colors = {
-                        procedure: 'from-blue-50 to-white border-blue-100 hover:border-blue-300',
-                        diagnose: 'from-green-50 to-white border-green-100 hover:border-green-300',
-                        medication: 'from-purple-50 to-white border-purple-100 hover:border-purple-300'
-                      };
-                      const iconColors = {
-                        procedure: 'text-blue-500',
-                        diagnose: 'text-green-500',
-                        medication: 'text-purple-500'
-                      };
-                      
-                      return (
-                        <div
-                          key={type}
-                          className={`bg-gradient-to-r ${colors[type]} p-4 rounded-xl mb-4 border shadow-sm animate-fade-in`}
-                          style={{ animationDelay: `${idx * 0.1}s` }}
+                        <button
+                          className={`flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${visitHistory.length > 0 && !isReadOnly ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 hover:from-blue-100 hover:to-indigo-100 border border-blue-200' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                          onClick={() => setShowEditVitalsModal(true)}
+                          disabled={visitHistory.length === 0 || isReadOnly}
                         >
-                          <div className="flex justify-between items-center mb-3">
-                            <div className="font-medium flex items-center text-gray-800">
-                              <span className={`mr-2 ${iconColors[type]}`}>{icons[type]}</span>
-                              {titles[type]}
+                          <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <Edit3 size={10} className="text-white" />
+                          </div>
+                          Edit
+                        </button>
+                    </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {[
+                          { label: 'Tinggi', value: vitals.height, icon: <Ruler size={20} className="text-blue-500" />, color: 'from-blue-500 to-indigo-600' },
+                          { label: 'Berat', value: vitals.weight, icon: <Weight size={20} className="text-green-500" />, color: 'from-green-500 to-emerald-600' },
+                          { label: 'Suhu', value: vitals.temperature, icon: <Thermometer size={20} className="text-orange-500" />, color: 'from-amber-500 to-orange-600' },
+                          { label: 'Jantung', value: vitals.heartRate, icon: <Heart size={20} className="text-red-500" />, color: 'from-red-500 to-pink-600' },
+                          { label: 'Gula Darah', value: vitals.bloodSugar, icon: <Droplet size={20} className="text-purple-500" />, color: 'from-purple-500 to-indigo-600' },
+                        ].map((vital, index) => (
+                          <div key={index} className="p-4 bg-slate-50 rounded-lg flex items-center shadow-sm">
+                            <div className={`w-8 h-8 bg-gradient-to-br ${vital.color} rounded-lg flex items-center justify-center mr-4 shadow-sm`}>
+                              {React.cloneElement(vital.icon, { size: 16, className: "text-white" })}
                             </div>
+                            <div>
+                              <p className="text-sm text-gray-500">{vital.label}</p>
+                              <p className="font-bold text-gray-800 text-lg">{vital.value.split(' ')[0]}</p>
+                    </div>
+                  </div>
+                        ))}
+                </div>
+                    </div>
+                    
+                    {/* Medical Records Input Section */}
+                    <div className="space-y-6">
+                       <h2 className="text-lg font-bold text-gray-800 flex items-center">
+                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
+                          <ClipboardList size={16} className="text-white" />
+                        </div>
+                        Input Rekam Medis
+                    </h2>
+                      {['procedure', 'diagnose', 'medication'].map((type) => {
+                        const config = {
+                          procedure: { icon: <Activity />, title: 'Tindakan', color: 'blue', gradient: 'from-blue-500 to-indigo-600' },
+                          diagnose: { icon: <FileText />, title: 'Diagnosa', color: 'green', gradient: 'from-green-500 to-emerald-600' },
+                          medication: { icon: <Pill />, title: 'Obat', color: 'purple', gradient: 'from-purple-500 to-indigo-600' },
+                        };
+                        const { icon, title, color, gradient } = config[type];
+                      return (
+                          <div key={type} className="bg-white rounded-xl shadow-lg p-6">
+                          <div className="flex justify-between items-center mb-3">
+                              <h3 className={`font-bold text-gray-800 flex items-center text-md`}>
+                                <div className={`w-5 h-5 bg-gradient-to-br ${gradient} rounded-lg flex items-center justify-center mr-3 shadow-sm`}>
+                                  {React.cloneElement(icon, { size: 14, className: "text-white" })}
+                            </div>
+                                {title}
+                              </h3>
                             <button
-                              className={`p-2 rounded-full transition-all duration-200 ${visitHistory.length === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-blue-600 hover:bg-blue-50 hover:shadow-sm'}`}
+                                className={`p-2 rounded-full transition-colors ${visitHistory.length === 0 || isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : `bg-gradient-to-r from-${color}-50 to-${color === 'blue' ? 'indigo' : color === 'green' ? 'emerald' : 'indigo'}-50 text-${color}-600 hover:from-${color}-100 hover:to-${color === 'blue' ? 'indigo' : color === 'green' ? 'emerald' : 'indigo'}-100 border border-${color}-200`}`}
                               onClick={() => updateModalState(type, { show: true })}
-                              disabled={visitHistory.length === 0}
-                              title={visitHistory.length === 0 ? 'Tidak ada kunjungan aktif' : `Tambah ${titles[type]}`}
+                                disabled={visitHistory.length === 0 || isReadOnly}
+                                title={visitHistory.length === 0 ? 'Tidak ada kunjungan aktif' : isReadOnly ? 'Pemeriksaan sudah selesai' : `Tambah ${title}`}
                             >
-                              <PlusCircle size={18} />
+                                <div className={`w-4 h-4 bg-gradient-to-br ${gradient} rounded-lg flex items-center justify-center`}>
+                                  <PlusCircle size={12} className="text-white" />
+                                </div>
                             </button>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            {medicalRecord[`${type}s`].length > 0 ? (
-                              medicalRecord[`${type}s`].map((item, index) => {
-                                // Check if this is a medication with details
-                                const isMedication = type === 'medication';
-                                const medicationDetails = isMedication && typeof item === 'object' ? item.details : null;
-                                
-                                return (
-                                  <div
-                                    key={index}
-                                    className={`bg-white px-3 py-2 rounded-lg text-sm border border-gray-200 shadow-sm animate-fade-in ${isMedication ? 'w-full' : ''}`}
-                                    style={{ animationDelay: `${index * 0.05 + 0.2}s` }}
-                                  >
-                                    {isMedication && medicationDetails ? (
-                                      <div className="flex flex-col">
-                                        <div className="font-medium">{item.name}</div>
-                                        <div className="flex flex-wrap gap-1 mt-1.5">
-                                          <span className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded text-xs">
-                                            <span className="font-medium">Dosis:</span> {medicationDetails.dosage}
-                                          </span>
-                                          <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-xs">
-                                            <span className="font-medium">Frekuensi:</span> {medicationDetails.frequency}
-                                          </span>
-                                          <span className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
-                                            <span className="font-medium">Durasi:</span> {medicationDetails.duration}
-                                          </span>
+                            <div className="flex flex-wrap gap-2 min-h-[40px]">
+                              {(() => {
+                                const items = medicalRecord[`${type}s`];
+                                console.log(`Rendering ${type}s:`, items); // Debug log
+                                return items.length > 0 ? items.map((item, index) => (
+                                  <div key={index} className={`bg-slate-50 px-3 py-1.5 rounded-lg text-sm shadow-sm ${type === 'medication' ? 'w-full' : ''}`}>
+                                    {type === 'medication' && typeof item === 'object' ? (
+                                      <div>
+                                        <p className="font-semibold text-gray-800">{item.name}</p>
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-1 text-gray-600">
+                                          <span>Dosis: {item.details.dosage}</span>
+                                          <span>Frekuensi: {item.details.frequency}</span>
+                                          <span>Durasi: {item.details.duration}</span>
                                         </div>
                                       </div>
-                                    ) : (
-                                      typeof item === 'object' ? item.name : item
-                                    )}
+                                    ) : type === 'diagnose' ? (
+                                      <div>
+                                        <p className="font-semibold text-gray-800">{item}</p>
                                   </div>
-                                );
-                              })
                             ) : (
-                              <div className="text-sm text-gray-500 py-2">Tidak ada data {titles[type].toLowerCase()}</div>
+                                      <p>{typeof item === 'object' ? item.name : item}</p>
                             )}
+                                  </div>
+                                )) : <p className="text-sm text-gray-400 italic">Belum ada data {title.toLowerCase()}.</p>;
+                              })()}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                  <div className="md:col-span-1">
-                    <h2 className="text-lg font-bold mb-4 flex items-center text-gray-800">
-                      <Activity className="mr-2 text-blue-500" size={20} />
-                      Tanda Vital
-                    </h2>
-                    <div className="bg-gradient-to-r from-blue-50 to-white p-5 rounded-xl border border-blue-100 shadow-sm animate-fade-in">
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="text-sm text-gray-600 flex items-center">
-                          <Calendar className="mr-1 text-blue-500" size={14} />
-                          {visitHistory.length > 0
-                            ? `${visitHistory[0].day} ${visitHistory[0].month} ${visitHistory[0].year} · ${visitHistory[0].time}`
-                            : 'Tidak ada data'}
+                  </div>
+                  
+                  {/* Right Side: Visit History */}
+                  <div className="lg:col-span-2">
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                      <h2 className="text-lg font-bold text-gray-800 flex items-center mb-6">
+                        <div className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
+                          <Clock size={16} className="text-white" />
                         </div>
-                        {visitHistory.length > 0 ? (
-                          <button
-                            className="bg-white text-blue-600 px-3 py-1.5 rounded-lg font-medium border border-blue-200 hover:bg-blue-50 transition-colors duration-200 flex items-center shadow-sm"
-                            onClick={() => setShowEditVitalsModal(true)}
-                          >
-                            <Edit3 className="mr-1" size={14} />
-                            Edit
-                          </button>
-                        ) : (
-                          <div className="text-sm bg-gray-100 px-3 py-1 rounded-lg text-gray-500">Belum ada kunjungan</div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        {
-                          [
-                            { label: 'Tinggi Badan', value: vitals.height, icon: <Ruler size={18} className="text-blue-500" /> },
-                            { label: 'Detak Jantung', value: vitals.heartRate, icon: <Heart size={18} className="text-red-500" /> },
-                            { label: 'Berat Badan', value: vitals.weight, icon: <Weight size={18} className="text-green-500" /> },
-                            { label: 'Gula Darah', value: vitals.bloodSugar, icon: <Droplet size={18} className="text-purple-500" /> },
-                            { label: 'Suhu Tubuh', value: vitals.temperature, icon: <Thermometer size={18} className="text-orange-500" /> },
-                          ].map((vital, index) => (
-                            <div 
-                              key={index} 
-                              className="p-4 bg-white rounded-lg border border-gray-100 shadow-sm flex items-start animate-fade-in" 
-                              style={{ animationDelay: `${index * 0.1}s` }}
-                            >
-                              <div className="mr-3 mt-0.5">{vital.icon}</div>
-                              <div>
-                                <div className="text-xs text-gray-500 mb-1">{vital.label}</div>
-                                <div className="font-medium text-gray-800">{vital.value}</div>
+                        Riwayat Kunjungan
+                    </h2>
+                      <div className="relative border-l-2 border-gray-200 pl-8 space-y-10">
+                        {visitHistory.length > 0 ? visitHistory.map((visit, index) => (
+                          <div key={index} className="relative">
+                            <div className={`absolute -left-[37px] top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg ${
+                              index === 0 
+                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white' 
+                                : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600'
+                            }`}>
+                              {visit.day}
+                        </div>
+                            <div>
+                              <p className="font-semibold text-gray-800">{visit.month} {visit.year} - {visit.time}</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">Dokter:</span> {visit.doctor} ({visit.specialty || 'Umum'})
+                              </p>
+                              <div className="mt-2 bg-gradient-to-r from-slate-50 to-gray-50 p-3 rounded-md shadow-sm border border-gray-100">
+                                <p className="text-sm font-medium text-gray-700">Keluhan:</p>
+                                <p className="text-sm text-gray-600">{visit.notes || 'Tidak ada catatan'}</p>
                               </div>
                             </div>
-                          ))
-                        }
+                          </div>
+                        )) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <Clock className="text-gray-400" size={24} />
+                            </div>
+                            <p className="mt-2">Tidak ada riwayat kunjungan</p>
+                          </div>
+                        )}
+                      </div>
+                              </div>
+                            </div>
                       </div>
                     </div>
+            )}
+          </div>
+        </div>
+        
                     {showEditVitalsModal && visitHistory.length > 0 && (
                       <EditVitalsModal
                         vitals={vitals}
-                        visitId={visitHistory[0].visit_id}
+                        visitId={(() => {
+                          // Try to get visit_id from current appointment first
+                          if (selectedPatientData?.appointment_id) {
+                            // This will be resolved in the modal itself
+                            return null;
+                          }
+                          // Fallback to latest visit
+                          return visitHistory[0].visit_id;
+                        })()}
                         onSave={setVitals}
                         onClose={() => setShowEditVitalsModal(false)}
+                        updateAppointmentStatus={updateAppointmentStatus}
                       />
                     )}
+        
                     {activeModalType && (
                       <MedicalRecordModal
                         key={activeModalType}
                         type={activeModalType}
-                        title={activeModalType.charAt(0).toUpperCase() + activeModalType.slice(1)}
+            title={
+              activeModalType === 'procedure' ? 'Tindakan' :
+              activeModalType === 'diagnose' ? 'Diagnosa' : 'Obat'
+            }
                         show={modalState[activeModalType].show}
-                        onClose={() => updateModalState(activeModalType, { show: false })}
+            onClose={() => handleModalClose(activeModalType)}
                         onSave={handleSaveMedicalRecord}
                         selectedItems={modalState[activeModalType].selected}
                         recentItems={modalState[activeModalType].recent}
-                        medicationDetails={modalState.medication.details} // New prop
+            medicationDetails={modalState.medication.details}
                         onSearch={handleSearchMedicalRecord}
                         onSelectItem={handleSelectItem}
                         onRemoveItem={handleRemoveItem}
@@ -1404,66 +1897,6 @@ const InputRM = () => {
                         setMedicalRecord={setMedicalRecord}
                       />
                     )}
-                  </div>
-                  <div className="md:col-span-1">
-                    <h2 className="text-lg font-bold mb-4 flex items-center text-gray-800">
-                      <Clock className="mr-2 text-blue-500" size={20} />
-                      Riwayat Kunjungan
-                    </h2>
-                    <div className="relative bg-gradient-to-r from-blue-50 to-white p-5 rounded-xl border border-blue-100 shadow-sm animate-fade-in">
-                      <div className="absolute left-7 top-14 bottom-5 w-0.5 bg-gradient-to-b from-blue-400 to-blue-100 rounded-full"></div>
-                      {visitHistory.length > 0 ? (
-                        visitHistory.map((visit, index) => (
-                          <div key={index} className="relative pl-8 mb-6 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                            <div
-                              className={`absolute left-0 w-5 h-5 rounded-full flex items-center justify-center ${
-                                index === 0 ? 'bg-blue-500 animate-pulse shadow-md' : 'bg-gray-200'
-                              }`}
-                            >
-                              {index === 0 && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:border-blue-200 transition-all duration-200">
-                              <div className="flex items-baseline mb-2">
-                                <div className="text-sm font-medium text-blue-500">{visit.month}</div>
-                                <div className="text-xl font-bold ml-1 text-gray-800">{visit.day}</div>
-                                <div className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-2">{visit.time}</div>
-                              </div>
-                              <div className="font-medium text-gray-800 flex items-center">
-                                <Stethoscope className="mr-1 text-blue-500" size={14} />
-                                {visit.doctor}
-                              </div>
-                              {visit.specialty && (
-                                <div className="text-xs text-gray-500 mt-1">{visit.specialty}</div>
-                              )}
-                              <div className="mt-3 bg-gradient-to-r from-blue-50 to-white p-3 rounded-lg border border-blue-100 text-sm text-gray-600">
-                                <div className="font-medium text-gray-700 flex items-center mb-1">
-                                  <FileText className="mr-1 text-blue-500" size={14} />
-                                  Keluhan:
-                                </div>
-                                {visit.notes || 'Tidak ada catatan'}
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-8 text-gray-500 animate-fade-in">
-                          <Clock className="mx-auto mb-3 text-gray-300" size={32} />
-                          <div>Tidak ada riwayat kunjungan</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center p-8 bg-gray-50 rounded-lg">
-                  <div className="text-gray-400 mb-2">Silakan pilih pasien dari daftar</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </PageTemplate>
   );

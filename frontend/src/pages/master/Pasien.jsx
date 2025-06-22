@@ -118,21 +118,25 @@ const Pasien = () => {
 
   return (
     <PageTemplate>
-      {/* Header modern ala RawatJalan/InputRM */}
-      <div className="bg-gradient-to-r from-sky-600 via-indigo-500 to-blue-600 rounded-2xl shadow-lg p-8 mb-8 flex flex-col md:flex-row md:items-center md:justify-between animate-fade-in">
+      {/* Header ala resep-obat.jsx */}
+      <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 rounded-2xl shadow-xl p-6 mb-8 border border-blue-100/50 flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in backdrop-blur-sm">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-4">
-            <User size={36} className="text-white drop-shadow" />
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
+              <User className="text-white" size={24} />
+            </div>
             Data Pasien
           </h1>
-          <p className="text-blue-100/90 mt-2 text-lg">Kelola data pasien dengan mudah dan cepat</p>
+          <p className="mt-2 text-gray-600 font-medium">Kelola data pasien dengan mudah dan cepat</p>
         </div>
         <div className="mt-6 md:mt-0 flex items-center gap-3">
           <div className="relative group">
-            <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 group-focus-within:text-sky-600 transition-colors duration-200" />
+            <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center absolute left-3 top-1/2 -translate-y-1/2 shadow-sm">
+              <Search size={14} className="text-white" />
+            </div>
             <input
               type="text"
-              className="pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 text-sm bg-white w-64 shadow-sm transition-all duration-300 hover:border-sky-300"
+              className="pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm bg-white w-64 shadow-sm transition-all duration-300 hover:border-blue-300"
               placeholder="Cari nama atau No RM..."
               value={search}
               onChange={e => setSearch(e.target.value)}

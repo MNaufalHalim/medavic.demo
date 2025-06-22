@@ -29,11 +29,12 @@ const medicalController = {
       const [patients] = await pool.query(`
         SELECT p.id, p.no_rm, p.nama_lengkap, p.tanggal_lahir,
                TIMESTAMPDIFF(YEAR, p.tanggal_lahir, CURDATE()) AS umur,
-               p.jenis_kelamin, a.appointment_time, d.name AS doctor_name
+               p.jenis_kelamin, a.appointment_time, d.name AS doctor_name, a.status,
+               a.appointment_code
         FROM appointments a
         JOIN pasien p ON a.patient_no_rm = p.no_rm
         LEFT JOIN doctors d ON a.doctor_id = d.id
-        WHERE a.appointment_date = ? AND a.status = 'scheduled'
+        WHERE a.appointment_date = ?
         ORDER BY a.appointment_time
       `, [formattedDate]);
 
@@ -107,16 +108,25 @@ const medicalController = {
     try {
       const { visit_id, height, weight, heart_rate, blood_sugar, temperature, patient_no_rm } = req.body;
 
+      console.log('Received vitals data:', { visit_id, height, weight, heart_rate, blood_sugar, temperature, patient_no_rm }); // Debug log
+
       if (!visit_id && !patient_no_rm) {
         return res.status(400).json({
           success: false,
           message: 'visit_id atau patient_no_rm wajib diisi'
         });
       }
-      if (!height || !weight || !heart_rate || !blood_sugar || !temperature) {
+
+      // Check if all required fields are present and not empty strings
+      const requiredFields = { height, weight, heart_rate, blood_sugar, temperature };
+      const emptyFields = Object.entries(requiredFields)
+        .filter(([key, value]) => !value || value.toString().trim() === '')
+        .map(([key]) => key);
+
+      if (emptyFields.length > 0) {
         return res.status(400).json({
           success: false,
-          message: 'Semua field vital signs wajib diisi'
+          message: `Field berikut wajib diisi: ${emptyFields.join(', ')}`
         });
       }
 
@@ -171,6 +181,8 @@ const medicalController = {
         });
       }
 
+      console.log('Updating vitals with values:', { height, weight, heart_rate, blood_sugar, temperature, finalVisitId }); // Debug log
+
       const [result] = await pool.query(
         `
         UPDATE visits 
@@ -193,6 +205,8 @@ const medicalController = {
         });
       }
 
+      console.log('Vitals updated successfully, affected rows:', result.affectedRows); // Debug log
+
       res.json({
         success: true,
         message: 'Vital signs berhasil diupdate',
@@ -210,12 +224,15 @@ const medicalController = {
   getCombinedPatientData: async (req, res) => {
     try {
       const { no_rm } = req.params;
+      const { appointment_code } = req.query; // Add appointment_code as query parameter
 
+      // First, get all visits for the patient
       const [visits] = await pool.query(`
         SELECT 
           v.visit_id,
           v.visit_date,
           v.visit_time,
+          v.appointment_id,
           d.name AS doctor_name
         FROM visits v
         JOIN pasien p ON v.patient_id = p.no_rm
@@ -240,11 +257,29 @@ const medicalController = {
         });
       }
 
+      // Determine which visit to use
+      let targetVisitId = null;
+      
+      if (appointment_code) {
+        // If appointment_code is provided, find the matching visit
+        const matchingVisit = visits.find(visit => visit.appointment_id === appointment_code);
+        if (matchingVisit) {
+          targetVisitId = matchingVisit.visit_id;
+          console.log(`Using visit_id ${targetVisitId} for appointment ${appointment_code}`);
+        }
+      }
+      
+      // Fallback to the most recent visit if no matching appointment found
+      if (!targetVisitId) {
+        targetVisitId = visits[0].visit_id;
+        console.log(`Using latest visit_id ${targetVisitId} as fallback`);
+      }
+
       const [vitals] = await pool.query(`
         SELECT height, weight, heart_rate, blood_sugar, temperature 
         FROM visits
         WHERE visit_id = ?
-      `, [visits[0].visit_id]);
+      `, [targetVisitId]);
 
       const [procedures] = await pool.query(`
         SELECT s.name AS procedure_name 
@@ -252,15 +287,15 @@ const medicalController = {
         JOIN visits v ON vp.visit_id = v.visit_id
         LEFT JOIN services s ON vp.procedure_id = s.id
         JOIN pasien p ON v.patient_id = p.no_rm WHERE v.visit_id = ?
-      `, [visits[0].visit_id]);
+      `, [targetVisitId]);
 
       const [diagnoses] = await pool.query(`
-        SELECT d.name AS diagnosis_name 
+        SELECT CONCAT(d.code, ' - ', d.name) AS diagnosis_name 
         FROM visit_diagnoses vd
         JOIN visits v ON vd.visit_id = v.visit_id
         LEFT JOIN diagnoses d ON vd.diagnose_id = d.id
         JOIN pasien p ON v.patient_id = p.no_rm WHERE v.visit_id = ?
-      `, [visits[0].visit_id]);
+      `, [targetVisitId]);
 
       const [medications] = await pool.query(`
         SELECT 
@@ -273,11 +308,12 @@ const medicalController = {
         LEFT JOIN medicines m ON vm.medicine_id = m.id
         JOIN pasien p ON v.patient_id = p.no_rm 
         WHERE v.visit_id = ?
-      `, [visits[0].visit_id]);
+      `, [targetVisitId]);
 
       res.json({
         success: true,
         data: {
+          visit_id: targetVisitId, // Include the visit_id in response
           vitals: vitals[0] || null,
           procedures: procedures.map(p => p.procedure_name) || [], // Ensure empty array
           diagnoses: diagnoses.map(d => d.diagnosis_name) || [], // Ensure empty array
@@ -487,6 +523,7 @@ const medicalController = {
           v.visit_id,
           v.patient_id,
           v.doctor_id,
+          v.appointment_id,
           d.name AS doctor_name,
           d.specialization AS doctor_specialty,
           v.visit_date,
@@ -611,6 +648,8 @@ const medicalController = {
     try {
       const { visit_id, items } = req.body;
 
+      console.log('Received procedure data:', { visit_id, items }); // Debug log
+
       if (!visit_id) {
         return res.status(400).json({
           success: false,
@@ -633,22 +672,31 @@ const medicalController = {
         await connection.query('DELETE FROM visit_procedures WHERE visit_id = ?', [visit_id]);
 
         if (items && items.length > 0) {
-          for (const procedureItem of items) {
-            // Handle both string and object formats
-            const procedureName = typeof procedureItem === 'object' && procedureItem.name ? procedureItem.name : procedureItem;
+          console.log('Processing procedure items:', items); // Debug log
+          
+          for (const item of items) {
+            // Handle both string and object formats from frontend
+            const procedureName = typeof item === 'object' && item.name ? item.name : item;
+            console.log('Processing procedure:', procedureName); // Debug log
             
             const [procedure] = await connection.query('SELECT id FROM services WHERE name = ?', [procedureName]);
+            console.log('Found procedure:', procedure); // Debug log
+            
             if (!procedure || procedure.length === 0) {
               throw new Error(`Prosedur '${procedureName}' tidak ditemukan`);
             }
+            
             await connection.query(
               'INSERT INTO visit_procedures (visit_id, procedure_id) VALUES (?, ?)',
               [visit_id, procedure[0].id]
             );
+            
+            console.log(`Inserted procedure: ${procedureName} with ID: ${procedure[0].id}`); // Debug log
           }
         }
 
         await connection.commit();
+        console.log('Successfully committed procedure updates'); // Debug log
 
         res.json({
           success: true,
@@ -746,6 +794,8 @@ const medicalController = {
     try {
       const { visit_id, items } = req.body;
 
+      console.log('Received diagnosis data:', { visit_id, items }); // Debug log
+
       if (!visit_id) {
         return res.status(400).json({
           success: false,
@@ -768,22 +818,35 @@ const medicalController = {
         await connection.query('DELETE FROM visit_diagnoses WHERE visit_id = ?', [visit_id]);
 
         if (items && items.length > 0) {
-          for (const diagnosisName of items) {
+          console.log('Processing diagnosis items:', items); // Debug log
+          
+          for (const item of items) {
+            // Handle both string and object formats from frontend
+            const diagnosisName = typeof item === 'object' && item.name ? item.name : item;
+            console.log('Processing diagnosis:', diagnosisName); // Debug log
+            
             const [diagnosis] = await connection.query(
               'SELECT id FROM diagnoses WHERE name = ? OR CONCAT(code, " - ", name) = ?',
               [diagnosisName, diagnosisName]
             );
+            
+            console.log('Found diagnosis:', diagnosis); // Debug log
+            
             if (!diagnosis || diagnosis.length === 0) {
               throw new Error(`Diagnosis '${diagnosisName}' tidak ditemukan`);
             }
+            
             await connection.query(
               'INSERT INTO visit_diagnoses (visit_id, diagnose_id) VALUES (?, ?)',
               [visit_id, diagnosis[0].id]
             );
+            
+            console.log(`Inserted diagnosis: ${diagnosisName} with ID: ${diagnosis[0].id}`); // Debug log
           }
         }
 
         await connection.commit();
+        console.log('Successfully committed diagnosis updates'); // Debug log
 
         res.json({
           success: true,
@@ -805,6 +868,104 @@ const medicalController = {
         success: false,
         message: 'Terjadi kesalahan server'
       });
+    }
+  },
+
+  updateAppointmentStatus: async (req, res) => {
+    try {
+      const { appointment_code } = req.body;
+
+      if (!appointment_code) {
+        return res.status(400).json({ success: false, message: 'appointment_code wajib diisi' });
+      }
+
+      const query = `
+        UPDATE appointments 
+        SET status = 'examined'
+        WHERE appointment_code = ? AND status = 'scheduled'
+      `;
+      
+      const [result] = await pool.query(query, [appointment_code]);
+
+      if (result.affectedRows === 0) {
+        console.log('No appointment updated - might already be examined or not found.');
+      }
+
+      res.json({
+        success: true,
+        message: 'Status appointment berhasil diperbarui menjadi examined',
+        updatedCount: result.affectedRows
+      });
+
+    } catch (error) {
+      console.error('Error in updateAppointmentStatus:', error);
+      res.status(500).json({ success: false, message: 'Gagal mengupdate status appointment' });
+    }
+  },
+
+  reactivateAppointment: async (req, res) => {
+    try {
+      const { appointment_code } = req.body;
+
+      if (!appointment_code) {
+        return res.status(400).json({ success: false, message: 'appointment_code wajib diisi' });
+      }
+
+      const query = `
+        UPDATE appointments 
+        SET status = 'scheduled' 
+        WHERE appointment_code = ? AND status = 'examined'
+      `;
+      
+      const [result] = await pool.query(query, [appointment_code]);
+
+      if (result.affectedRows === 0) {
+        console.log('No appointment reactivated - might not be in "examined" status or not found.');
+      }
+
+      res.json({
+        success: true,
+        message: 'Appointment berhasil diaktifkan kembali.',
+        updatedCount: result.affectedRows
+      });
+
+    } catch (error) {
+      console.error('Error in reactivateAppointment:', error);
+      res.status(500).json({ success: false, message: 'Gagal mengaktifkan kembali appointment.' });
+    }
+  },
+
+  getVisitIdByAppointment: async (req, res) => {
+    try {
+      const { appointment_code } = req.params;
+
+      if (!appointment_code) {
+        return res.status(400).json({ success: false, message: 'appointment_code wajib diisi' });
+      }
+
+      const [visit] = await pool.query(`
+        SELECT visit_id, patient_id, visit_date, appointment_id
+        FROM visits 
+        WHERE appointment_id = ?
+        ORDER BY visit_date DESC
+        LIMIT 1
+      `, [appointment_code]);
+
+      if (!visit || visit.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Tidak ada kunjungan yang ditemukan untuk appointment ini'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: visit[0]
+      });
+
+    } catch (error) {
+      console.error('Error in getVisitIdByAppointment:', error);
+      res.status(500).json({ success: false, message: 'Gagal mendapatkan visit_id' });
     }
   }
 };
