@@ -2813,13 +2813,7 @@ const RawatJalan = () => {
                                               </div>
                                               <div className="flex-1 min-w-0 overflow-hidden">
                                                 <h4 className="font-medium text-gray-800 break-words flex-1">
-                                                  Dr.{" "}
-                                                  {
-                                                    doctors.find(
-                                                      (d) =>
-                                                        d.id === selectedDoctor
-                                                    )?.name
-                                                  }
+                                                  Dr. {doc.name}
                                                 </h4>
                                                 <div className="mt-1 flex items-center text-xs text-gray-500 truncate">
                                                   <Building2
@@ -2866,12 +2860,7 @@ const RawatJalan = () => {
                               <div className="flex-1 min-w-0 overflow-hidden">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <h4 className="font-medium text-gray-800 truncate flex-1">
-                                    Dr.{" "}
-                                    {
-                                      doctors.find(
-                                        (d) => d.id === selectedDoctor
-                                      )?.name
-                                    }
+                                    Dr. {doctors.find((d) => d.id === selectedDoctor)?.name}
                                   </h4>
                                 </div>
                                 <div className="mt-1 flex items-center gap-2 min-w-0">

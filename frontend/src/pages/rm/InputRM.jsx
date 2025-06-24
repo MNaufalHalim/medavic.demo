@@ -2103,15 +2103,12 @@ const InputRM = () => {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                       {/* Complaint Section */}
                       <div className="flex-1 sm:flex-none sm:min-w-[200px] sm:max-w-[250px]">
-                        <p className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center mb-1">
+                        <div className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center mb-1">
                           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-1.5 shadow-sm flex-shrink-0">
-                            <FileText
-                              size={6}
-                              className="text-white sm:w-2 sm:h-2"
-                            />
+                            <FileText size={6} className="text-white sm:w-2 sm:h-2" />
                           </div>
-                          Keluhan Utama
-                        </p>
+                          <span>Keluhan Utama</span>
+                        </div>
                         <p className="text-xs text-gray-600 line-clamp-2">
                           {visitHistory.length > 0
                             ? visitHistory[0].notes
