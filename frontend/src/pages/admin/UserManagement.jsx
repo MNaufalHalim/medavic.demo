@@ -428,7 +428,7 @@ const UserManagement = () => {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
         {/* Delete Confirmation Dialog */}
         {showDeleteConfirm && userToDelete && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center animate-fade-in">
@@ -437,9 +437,9 @@ const UserManagement = () => {
                 <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Trash size={28} className="text-red-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">Confirm Deletion</h3>
+                <h3 className="text-xl font-bold text-gray-800">Konfirmasi Hapus</h3>
                 <p className="text-gray-600 mt-2">
-                  Are you sure you want to delete the user <span className="font-semibold">{userToDelete.username}</span>? This action cannot be undone.
+                  Anda yakin ingin menghapus pengguna <span className="font-semibold">{userToDelete.username}</span>? Tindakan ini tidak dapat dibatalkan.
                 </p>
               </div>
               
@@ -450,18 +450,18 @@ const UserManagement = () => {
                     setUserToDelete(null);
                   }}
                   className="flex-1 py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
-                  aria-label="Cancel deletion"
+                  aria-label="Batalkan hapus"
                 >
                   <X size={18} />
-                  Cancel
+                  Batal
                 </button>
                 <button
                   onClick={confirmDelete}
                   className="flex-1 py-2.5 px-4 rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white font-medium flex items-center justify-center gap-2 hover:from-red-700 hover:to-red-600 transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  aria-label="Confirm deletion"
+                  aria-label="Konfirmasi hapus"
                 >
                   <Trash size={18} />
-                  Delete
+                  Hapus
                 </button>
               </div>
             </div>
@@ -488,81 +488,32 @@ const UserManagement = () => {
           </div>
         )}
 
-        {/* Modern Header with Gradient Background */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl shadow-md p-6 mb-8 text-white">
-          <div className="flex justify-between items-center">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold flex items-center">
-                <Users className="mr-3" size={28} strokeWidth={2} />
-                User Management
-              </h1>
-              <p className="text-blue-100 mt-2 flex items-center">
-                <Shield className="mr-2" size={16} />
-                Manage system users, roles, and permissions
-              </p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+                    <Users className="text-blue-600" size={32} />
+                    Manajemen Pengguna
+                </h1>
+                <p className="text-gray-500 mt-1 text-sm sm:text-base">Kelola pengguna, role, dan status sistem.</p>
             </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  setSelectedUser(null);
-                  setFormData({
-                    username: '',
-                    password: '',
-                    full_name: '',
-                    role_id: '',
-                    delt_flg: 'N',
-                  });
-                  setIsModalOpen(true);
-                  setFormErrors({});
-                }}
-                className="bg-white/10 backdrop-blur-sm hover:bg-white/20 px-4 py-2.5 rounded-lg shadow-sm flex items-center gap-2 text-white transition-all duration-200"
-                aria-label="Add new user"
-              >
-                <UserPlus size={18} />
-                Add New User
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
-              <div className="bg-white/20 rounded-full p-3 mr-3">
-                <User size={20} />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm bg-white border border-gray-200 rounded-lg px-3 py-2">
+                <span className="font-bold text-gray-700">{users.length}</span>
+                <span className="text-gray-500">Total</span>
               </div>
-              <div>
-                <div className="text-sm text-blue-100">Total Users</div>
-                <div className="text-2xl font-bold">{users.length}</div>
+              <div className="flex items-center gap-2 text-sm bg-white border border-gray-200 rounded-lg px-3 py-2">
+                <span className="font-bold text-green-600">{users.filter((user) => user.delt_flg !== 'Y').length}</span>
+                <span className="text-gray-500">Aktif</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm bg-white border border-gray-200 rounded-lg px-3 py-2">
+                <span className="font-bold text-red-600">{users.filter((user) => user.delt_flg === 'Y').length}</span>
+                <span className="text-gray-500">Nonaktif</span>
               </div>
             </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
-              <div className="bg-white/20 rounded-full p-3 mr-3">
-                <CheckCircle size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-blue-100">Active Users</div>
-                <div className="text-2xl font-bold">
-                  {users.filter((user) => user.delt_flg !== 'Y').length}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
-              <div className="bg-white/20 rounded-full p-3 mr-3">
-                <XCircle size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-blue-100">Inactive Users</div>
-                <div className="text-2xl font-bold">
-                  {users.filter((user) => user.delt_flg === 'Y').length}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200/80 p-4 sm:p-6 mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex-1 w-full md:w-auto">
               <div className="relative">
@@ -571,17 +522,52 @@ const UserManagement = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search users by name, username or role..."
+                  placeholder="Cari pengguna..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
                   aria-label="Search users"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto">
-              <button
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className={`px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none ${
+                    activeTab === 'all'
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border-r border-gray-200'
+                  }`}
+                  aria-label="Show all users"
+                >
+                  Semua
+                </button>
+                <button
+                  onClick={() => setActiveTab('active')}
+                  className={`px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none ${
+                    activeTab === 'active'
+                      ? 'bg-green-600 text-white shadow'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border-r border-gray-200'
+                  }`}
+                  aria-label="Show active users"
+                >
+                  Aktif
+                </button>
+                <button
+                  onClick={() => setActiveTab('inactive')}
+                  className={`px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none ${
+                    activeTab === 'inactive'
+                      ? 'bg-red-600 text-white shadow'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
+                  aria-label="Show inactive users"
+                >
+                  Nonaktif
+                </button>
+              </div>
+               <button
                 onClick={() => {
                   setSelectedUser(null);
                   setFormData({
@@ -594,67 +580,17 @@ const UserManagement = () => {
                   setIsModalOpen(true);
                   setFormErrors({});
                 }}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow font-semibold text-sm"
                 aria-label="Create new user"
               >
-                <UserPlus size={18} />
-                New User
+                <UserPlus size={16} />
+                Pengguna Baru
               </button>
-              <div className="flex rounded-lg border border-gray-300 overflow-hidden shadow-sm">
-                <button
-                  onClick={() => setActiveTab('all')}
-                  className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-                    activeTab === 'all'
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                  aria-label="Show all users"
-                >
-                  All
-                  <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
-                    activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'
-                  }`}>
-                    {users.length}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('active')}
-                  className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-                    activeTab === 'active'
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                  aria-label="Show active users"
-                >
-                  Active
-                  <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
-                    activeTab === 'active' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'
-                  }`}>
-                    {users.filter((user) => user.delt_flg !== 'Y').length}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('inactive')}
-                  className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-                    activeTab === 'inactive'
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                  aria-label="Show inactive users"
-                >
-                  Inactive
-                  <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
-                    activeTab === 'inactive' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'
-                  }`}>
-                    {users.filter((user) => user.delt_flg === 'Y').length}
-                  </span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200/80">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <RefreshCw size={24} className="text-blue-500 animate-spin mr-2" />
@@ -686,50 +622,50 @@ const UserManagement = () => {
             </div>
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0 z-10">
+              <table className="min-w-full divide-y divide-gray-100">
+                <thead className="bg-gray-100/70 sticky top-0 z-10">
                   <tr>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
                     >
-                      User
+                      Pengguna
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
                     >
                       Role
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
                     >
                       Status
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
                     >
-                      Created At
+                      Dibuat pada
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20"
+                      className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-20"
                     >
-                      Actions
+                      Aksi
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-100">
                   {filteredUsers.map((user) => {
                     const formattedDate = formatDate(user.created_at);
                     return (
                       <tr key={user.id} className="table-row-hover">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-3 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 font-medium text-sm">
+                              <span className="text-blue-600 font-bold text-sm">
                                 {user.full_name
                                   .split(' ')
                                   .map((n) => n[0])
@@ -739,7 +675,7 @@ const UserManagement = () => {
                               </span>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-semibold text-gray-800">
                                 {user.full_name}
                               </div>
                               <div className="text-sm text-gray-500">
@@ -748,101 +684,42 @@ const UserManagement = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-blue-50 text-blue-700">
+                        <td className="px-6 py-3 whitespace-nowrap">
+                          <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                             {user.role_name || 'No Role'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2.5 py-1 inline-flex text-xs leading-5 font-medium rounded-full items-center ${
-                              user.delt_flg === 'Y'
-                                ? 'bg-red-50 text-red-700'
-                                : 'bg-green-50 text-green-700'
-                            }`}
-                          >
-                            {user.delt_flg === 'Y' ? (
-                              <XCircle size={14} className="mr-1" />
-                            ) : (
-                              <CheckCircle size={14} className="mr-1" />
-                            )}
-                            {user.delt_flg === 'Y' ? 'Inactive' : 'Active'}
-                          </span>
+                        <td className="px-6 py-3 whitespace-nowrap">
+                          <StatusBadge delt_flg={user.delt_flg} />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex flex-col">
-                            <div className="flex items-center">
-                              <Calendar size={14} className="mr-1 text-gray-400" />
-                              {formattedDate.date}
-                            </div>
-                            <div className="flex items-center mt-1">
-                              <Clock size={14} className="mr-1 text-gray-400" />
-                              {formattedDate.time}
-                            </div>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                          <div>{formattedDate.date}</div>
+                          <div className="text-xs text-gray-400">{formattedDate.time}</div>
+                        </td>
+                        <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleEdit(user)}
+                                className="p-2 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
+                                title="Edit Pengguna"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => toggleUserStatus(user)}
+                                className={`p-2 rounded-full transition-colors ${user.delt_flg === 'Y' ? 'text-green-600 hover:bg-green-100' : 'text-amber-600 hover:bg-amber-100'}`}
+                                title={user.delt_flg === 'Y' ? 'Aktifkan Pengguna' : 'Nonaktifkan Pengguna'}
+                              >
+                                {user.delt_flg === 'Y' ? <UserCheck size={16} /> : <UserX size={16} />}
+                              </button>
+                              <button
+                                onClick={() => handleDelete(user)}
+                                className="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                                title="Hapus Pengguna"
+                              >
+                                <Trash size={16} />
+                              </button>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                          <button
-                            onClick={() => handleActionClick(user.id)}
-                            className="text-gray-400 hover:text-gray-600 focus:outline-none p-1.5 rounded-full hover:bg-gray-100"
-                            aria-label="User actions"
-                          >
-                            <MoreVertical size={18} color="#606060" />
-                          </button>
-                          {activeDropdown === user.id && (
-                            <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-xl bg-white ring-1 ring-black ring-opacity-5 z-10 me-2 dropdown-animation overflow-hidden">
-                              <div className="py-2 divide-y divide-gray-100">
-                                <div className="px-4 py-2 text-xs font-semibold text-gray-400 bg-gray-50">
-                                  User Actions
-                                </div>
-                                <div>
-                                  <button
-                                    onClick={() => {
-                                      handleEdit(user);
-                                      setActiveDropdown(null);
-                                    }}
-                                    className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 w-full text-left transition-colors duration-150"
-                                    aria-label="Edit user"
-                                  >
-                                    <Edit size={16} className="mr-2 text-blue-500" />
-                                    Edit User
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      toggleUserStatus(user);
-                                      setActiveDropdown(null);
-                                    }}
-                                    className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 w-full text-left transition-colors duration-150"
-                                    aria-label={user.delt_flg === 'Y' ? 'Activate user' : 'Deactivate user'}
-                                  >
-                                    {user.delt_flg === 'Y' ? (
-                                      <>
-                                        <UserCheck size={16} className="mr-2 text-green-500" />
-                                        Activate User
-                                      </>
-                                    ) : (
-                                      <>
-                                        <UserX size={16} className="mr-2 text-amber-500" />
-                                        Deactivate User
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                                <div>
-                                  <button
-                                    onClick={() => {
-                                      handleDelete(user);
-                                    }}
-                                    className="flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left transition-colors duration-150"
-                                    aria-label="Delete user"
-                                  >
-                                    <Trash size={16} className="mr-2 text-red-500" />
-                                    Delete Permanently
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </td>
                       </tr>
                     );
@@ -854,192 +731,178 @@ const UserManagement = () => {
         </div>
 
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-fade-in backdrop-blur-sm">
-            <div className="bg-white p-0 rounded-xl shadow-2xl w-full max-w-md modal-animation">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-t-xl flex justify-between items-center">
-                <h2 className="text-xl font-bold text-white flex items-center">
-                  {selectedUser ? (
-                    <>
-                      <Edit size={20} className="mr-2" />
-                      Edit User
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus size={20} className="mr-2" />
-                      Create New User
-                    </>
-                  )}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setSelectedUser(null);
-                    setError(null);
-                    setFormErrors({});
-                  }}
-                  className="text-white/80 hover:text-white hover:bg-blue-700/50 p-1.5 rounded-full transition-all"
-                  aria-label="Close modal"
-                >
-                  <X size={20} />
-                </button>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-animation overflow-hidden border border-gray-100">
+              {/* Minimalist Header */}
+              <div className="bg-slate-800 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-slate-700 p-2 rounded-lg">
+                    {selectedUser ? (
+                      <Edit size={18} className="text-white"/>
+                    ) : (
+                      <UserPlus size={18} className="text-white"/>
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">
+                      {selectedUser ? 'Edit Pengguna' : 'Pengguna Baru'}
+                    </h2>
+                    <p className="text-slate-300 text-xs">
+                      {selectedUser ? 'Perbarui data pengguna' : 'Buat akun baru'}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="p-6">
+
+              {/* Compact Form */}
+              <div className="p-5">
                 <form onSubmit={handleSubmit}>
-                  <div className="space-y-5">
+                  <div className="space-y-4">
+                    {/* Username */}
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                        <User size={16} className="text-blue-500 mr-1.5" />
+                      <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                        <User size={14} className="text-blue-500" />
                         Username
                       </label>
-                      <div className="relative rounded-md shadow-sm">
-                        <input
-                          type="text"
-                          value={formData.username}
-                          onChange={(e) =>
-                            setFormData({ ...formData, username: e.target.value })
-                          }
-                          className={`w-full px-4 py-2.5 border-2 ${
-                            formErrors.username
-                              ? 'border-red-300 bg-red-50'
-                              : 'border-gray-200 focus:border-blue-500'
-                          } rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none`}
-                          placeholder="Enter username"
-                          required
-                          aria-label="Username"
-                        />
-                        {formErrors.username && (
-                          <p className="mt-1.5 text-sm text-red-600 flex items-center">
-                            <AlertCircle size={14} className="mr-1" />
-                            {formErrors.username}
-                          </p>
-                        )}
-                      </div>
+                      <input
+                        type="text"
+                        value={formData.username}
+                        onChange={(e) =>
+                          setFormData({ ...formData, username: e.target.value })
+                        }
+                        className={`w-full px-3 py-2.5 border ${
+                          formErrors.username
+                            ? 'border-red-300 bg-red-50'
+                            : 'border-gray-200 focus:border-blue-500'
+                        } rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500/20 focus:outline-none`}
+                        placeholder="Masukkan username"
+                        required
+                      />
+                      {formErrors.username && (
+                        <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          {formErrors.username}
+                        </p>
+                      )}
                     </div>
 
+                    {/* Password */}
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                        <Lock size={16} className="text-blue-500 mr-1.5" />
-                        Password{' '}
+                      <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                        <Lock size={14} className="text-amber-500" />
+                        Password
                         {selectedUser && (
-                          <span className="text-gray-500 text-xs ml-1 bg-gray-100 px-2 py-0.5 rounded-full">
-                            Optional
+                          <span className="text-gray-400 text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                            Opsional
                           </span>
                         )}
                       </label>
-                      <div className="relative rounded-lg shadow-sm">
+                      <div className="relative">
                         <input
                           type={showPassword ? 'text' : 'password'}
                           value={formData.password}
                           onChange={(e) =>
                             setFormData({ ...formData, password: e.target.value })
                           }
-                          className={`w-full px-4 py-2.5 border-2 ${
+                          className={`w-full px-3 py-2.5 border ${
                             formErrors.password
                               ? 'border-red-300 bg-red-50'
-                              : 'border-gray-200 focus:border-blue-500'
-                          } rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10`}
-                          placeholder={
-                            selectedUser ? 'Leave empty to keep current password' : 'Enter secure password'
-                          }
+                              : 'border-gray-200 focus:border-amber-500'
+                          } rounded-lg transition-all duration-200 focus:ring-2 focus:ring-amber-500/20 focus:outline-none pr-10`}
+                          placeholder={selectedUser ? 'Kosongkan jika tidak diubah' : 'Masukkan password'}
                           required={!selectedUser}
-                          aria-label="Password"
                         />
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors"
-                            aria-label={showPassword ? 'Hide password' : 'Show password'}
-                          >
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </button>
-                        </div>
-                        {formErrors.password && (
-                          <p className="mt-1.5 text-sm text-red-600 flex items-center">
-                            <AlertCircle size={14} className="mr-1" />
-                            {formErrors.password}
-                          </p>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-amber-600"
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                       </div>
+                      {formErrors.password && (
+                        <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          {formErrors.password}
+                        </p>
+                      )}
                     </div>
 
+                    {/* Full Name */}
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                        <UserRound size={16} className="text-blue-500 mr-1.5" />
-                        Full Name
+                      <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                        <UserRound size={14} className="text-green-500" />
+                        Nama Lengkap
                       </label>
-                      <div className="relative rounded-lg shadow-sm">
-                        <input
-                          type="text"
-                          value={formData.full_name}
-                          onChange={(e) =>
-                            setFormData({ ...formData, full_name: e.target.value })
-                          }
-                          className={`w-full px-4 py-2.5 border-2 ${
-                            formErrors.full_name
-                              ? 'border-red-300 bg-red-50'
-                              : 'border-gray-200 focus:border-blue-500'
-                          } rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none`}
-                          placeholder="Enter user's full name"
-                          required
-                          aria-label="Full name"
-                        />
-                        {formErrors.full_name && (
-                          <p className="mt-1.5 text-sm text-red-600 flex items-center">
-                            <AlertCircle size={14} className="mr-1" />
-                            {formErrors.full_name}
-                          </p>
-                        )}
-                      </div>
+                      <input
+                        type="text"
+                        value={formData.full_name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, full_name: e.target.value })
+                        }
+                        className={`w-full px-3 py-2.5 border ${
+                          formErrors.full_name
+                            ? 'border-red-300 bg-red-50'
+                            : 'border-gray-200 focus:border-green-500'
+                        } rounded-lg transition-all duration-200 focus:ring-2 focus:ring-green-500/20 focus:outline-none`}
+                        placeholder="Masukkan nama lengkap"
+                        required
+                      />
+                      {formErrors.full_name && (
+                        <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          {formErrors.full_name}
+                        </p>
+                      )}
                     </div>
 
+                    {/* Role */}
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                        <Shield size={16} className="text-blue-500 mr-1.5" />
+                      <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                        <Shield size={14} className="text-purple-500" />
                         Role
                       </label>
-                      <div className="relative rounded-lg shadow-sm">
+                      <div className="relative">
                         <select
                           value={formData.role_id}
                           onChange={(e) =>
                             setFormData({ ...formData, role_id: e.target.value })
                           }
-                          className={`w-full px-4 py-2.5 border-2 ${
+                          className={`w-full px-3 py-2.5 border ${
                             formErrors.role_id
                               ? 'border-red-300 bg-red-50'
-                              : 'border-gray-200 focus:border-blue-500'
-                          } rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none bg-white`}
+                              : 'border-gray-200 focus:border-purple-500'
+                          } rounded-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500/20 focus:outline-none appearance-none bg-white`}
                           required
-                          aria-label="Role"
                         >
-                          <option value="">Select a role</option>
+                          <option value="">Pilih role</option>
                           {roles.map((role) => (
                             <option key={role.id} value={role.id}>
                               {role.role_name}
                             </option>
                           ))}
                         </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
                           <ChevronDown size={16} />
                         </div>
-                        {formErrors.role_id && (
-                          <p className="mt-1.5 text-sm text-red-600 flex items-center">
-                            <AlertCircle size={14} className="mr-1" />
-                            {formErrors.role_id}
-                          </p>
-                        )}
                       </div>
+                      {formErrors.role_id && (
+                        <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          {formErrors.role_id}
+                        </p>
+                      )}
                     </div>
 
+                    {/* Status - Only for Edit */}
                     {selectedUser && (
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                          <Activity size={16} className="text-blue-500 mr-1.5" />
+                        <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                          <Activity size={14} className="text-orange-500" />
                           Status
                         </label>
-                        <div className="flex gap-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                          <label className="relative inline-flex items-center p-2 cursor-pointer rounded-md transition-all duration-200 hover:bg-white flex-1 justify-center">
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="cursor-pointer">
                             <input
                               type="radio"
                               value="N"
@@ -1048,14 +911,17 @@ const UserManagement = () => {
                                 setFormData({ ...formData, delt_flg: 'N' })
                               }
                               className="sr-only peer"
-                              aria-label="Active status"
                             />
-                            <div className={`flex items-center justify-center py-1.5 px-3 rounded-md w-full transition-all duration-200 ${formData.delt_flg === 'N' ? 'bg-green-100 text-green-700 shadow-sm' : 'text-gray-600'}`}>
-                              <CheckCircle size={16} className={`mr-2 ${formData.delt_flg === 'N' ? 'text-green-500' : 'text-gray-400'}`} />
-                              Active
+                            <div className={`flex items-center justify-center py-2 px-3 rounded-lg border-2 transition-all duration-200 ${
+                              formData.delt_flg === 'N' 
+                                ? 'bg-green-600 text-white border-green-600 shadow' 
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'
+                            }`}>
+                              <CheckCircle size={14} className="mr-1.5" />
+                              <span className="text-sm font-medium">Active</span>
                             </div>
                           </label>
-                          <label className="relative inline-flex items-center p-2 cursor-pointer rounded-md transition-all duration-200 hover:bg-white flex-1 justify-center">
+                          <label className="cursor-pointer">
                             <input
                               type="radio"
                               value="Y"
@@ -1064,11 +930,14 @@ const UserManagement = () => {
                                 setFormData({ ...formData, delt_flg: 'Y' })
                               }
                               className="sr-only peer"
-                              aria-label="Inactive status"
                             />
-                            <div className={`flex items-center justify-center py-1.5 px-3 rounded-md w-full transition-all duration-200 ${formData.delt_flg === 'Y' ? 'bg-red-100 text-red-700 shadow-sm' : 'text-gray-600'}`}>
-                              <XCircle size={16} className={`mr-2 ${formData.delt_flg === 'Y' ? 'text-red-500' : 'text-gray-400'}`} />
-                              Inactive
+                            <div className={`flex items-center justify-center py-2 px-3 rounded-lg border-2 transition-all duration-200 ${
+                              formData.delt_flg === 'Y' 
+                                ? 'bg-red-600 text-white border-red-600 shadow' 
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-red-400'
+                            }`}>
+                              <XCircle size={14} className="mr-1.5" />
+                              <span className="text-sm font-medium">Inactive</span>
                             </div>
                           </label>
                         </div>
@@ -1076,7 +945,8 @@ const UserManagement = () => {
                     )}
                   </div>
 
-                  <div className="mt-8 flex justify-end gap-3">
+                  {/* Solid Action Buttons */}
+                  <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
                     <button
                       type="button"
                       onClick={() => {
@@ -1085,26 +955,32 @@ const UserManagement = () => {
                         setError(null);
                         setFormErrors({});
                       }}
-                      className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 rounded-lg transition-all duration-200 shadow-sm hover:shadow focus:ring-2 focus:ring-gray-200 focus:outline-none flex items-center"
-                      aria-label="Cancel"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg transition-all duration-200 flex items-center gap-2 shadow"
                     >
-                      <X size={16} className="mr-1.5" />
-                      Cancel
+                      <X size={16} />
+                      Batal
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md focus:ring-2 focus:ring-blue-300 focus:outline-none flex items-center"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow"
                       disabled={isLoading}
-                      aria-label={selectedUser ? 'Update user' : 'Create user'}
                     >
                       {isLoading ? (
-                        <RefreshCw size={16} className="animate-spin mr-2" />
+                        <>
+                          <RefreshCw size={16} className="animate-spin" />
+                          Menyimpan...
+                        </>
                       ) : selectedUser ? (
-                        <Save size={16} className="mr-1.5" />
+                        <>
+                          <Save size={16} />
+                          Simpan
+                        </>
                       ) : (
-                        <UserPlus size={16} className="mr-1.5" />
+                        <>
+                          <UserPlus size={16} />
+                          Buat
+                        </>
                       )}
-                      {selectedUser ? 'Update User' : 'Create User'}
                     </button>
                   </div>
                 </form>

@@ -37,6 +37,7 @@ import {
   Clipboard,
 } from "lucide-react";
 import PageTemplate from "../../components/PageTemplate";
+import { createPortal } from "react-dom";
 
 const ScheduleSkeleton = () => (
   <div className="min-w-[700px]">
@@ -1435,47 +1436,66 @@ const RawatJalan = () => {
 
   // Fungsi untuk membuka date picker
   const openDatePicker = () => {
-    console.log('openDatePicker called');
-    console.log('dateInputRef.current:', dateInputRef.current);
-    console.log('selectedSlot:', selectedSlot);
-    
+    console.log("openDatePicker called");
+    console.log("dateInputRef.current:", dateInputRef.current);
+    console.log("selectedSlot:", selectedSlot);
+
     if (dateInputRef.current && !selectedSlot) {
-      console.log('Input found and slot not selected');
-      
+      console.log("Input found and slot not selected");
+
       // Coba focus dulu, lalu click
       try {
-        console.log('Focusing input...');
+        console.log("Focusing input...");
         dateInputRef.current.focus();
-        
+
         // Tunggu sebentar lalu coba showPicker atau click
         setTimeout(() => {
-          if (typeof dateInputRef.current.showPicker === 'function') {
+          if (typeof dateInputRef.current.showPicker === "function") {
             try {
-              console.log('Trying showPicker...');
+              console.log("Trying showPicker...");
               dateInputRef.current.showPicker();
             } catch (error) {
-              console.log('showPicker failed, trying click');
+              console.log("showPicker failed, trying click");
               dateInputRef.current.click();
             }
           } else {
-            console.log('showPicker not supported, using click');
+            console.log("showPicker not supported, using click");
             dateInputRef.current.click();
           }
         }, 100);
       } catch (error) {
-        console.log('Error focusing input:', error);
+        console.log("Error focusing input:", error);
       }
     } else {
-      console.log('Date input not found or slot selected');
+      console.log("Date input not found or slot selected");
     }
   };
 
   // Effect untuk memastikan input date bisa diakses
   useEffect(() => {
     if (dateInputRef.current) {
-      console.log('Date input ref is ready:', dateInputRef.current);
+      console.log("Date input ref is ready:", dateInputRef.current);
     }
   }, [dateInputRef.current]);
+
+  const doctorModalRefs = [useRef(null), useRef(null), useRef(null)];
+
+  // Tambahkan useEffect untuk menutup modal grid dokter saat klik di luar
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (showDoctorModal && selectedSection !== null) {
+        const ref = doctorModalRefs[selectedSection];
+        if (ref && ref.current && !ref.current.contains(event.target)) {
+          setShowDoctorModal(false);
+        }
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDoctorModal, selectedSection]);
+
+  // State untuk anchor posisi modal
+  const [doctorModalAnchor, setDoctorModalAnchor] = useState(null);
 
   return (
     <PageTemplate>
@@ -1621,9 +1641,7 @@ const RawatJalan = () => {
             <>
               <div className="min-w-[700px] grid grid-cols-[80px_repeat(3,1fr)] border-b border-gray-100">
                 <div className="p-4 border-r border-gray-100 bg-gray-50 flex items-center justify-center">
-                  <div className="text-gray-500 font-medium text-sm">
-                    GMT +07:00
-                  </div>
+                  <div className="text-gray-500 font-medium text-sm">GMT +07:00</div>
                 </div>
                 {[0, 1, 2].map((sectionIdx) => {
                   const doctor = selectedDoctors[sectionIdx];
@@ -1638,21 +1656,29 @@ const RawatJalan = () => {
                   return (
                     <div
                       key={sectionIdx}
-                      className={`${
+                      className={`overflow-hidden flex flex-col justify-center ${
                         sectionIdx !== 2 ? "border-r border-gray-100" : ""
                       }`}
+                      style={{ minWidth: 0 }}
                     >
-                      <div className="relative">
+                      <div className="relative w-full h-full">
                         <button
-                          onClick={() => {
-                            setSelectedSection(sectionIdx);
-                            setShowDoctorModal(!showDoctorModal);
+                          onClick={e => {
+                            if (selectedSection === sectionIdx) {
+                              setShowDoctorModal((prev) => !prev);
+                              setDoctorModalAnchor(e.currentTarget);
+                            } else {
+                              setSelectedSection(sectionIdx);
+                              setShowDoctorModal(true);
+                              setDoctorModalAnchor(e.currentTarget);
+                            }
                           }}
                           className={`w-full p-5 ${
                             doctor
                               ? "bg-white hover:bg-blue-50/30"
                               : "bg-gray-50/50 hover:bg-gray-100/50"
-                          } transition-all duration-200`}
+                          } transition-all duration-200 h-full flex flex-col justify-center`}
+                          style={{ minWidth: 0 }}
                         >
                           {doctor ? (
                             <div className="relative group flex items-start gap-3 p-3 rounded-xl bg-white/60 backdrop-blur-md shadow-md border border-gray-100 hover:shadow-lg transition-all duration-200 min-h-[90px] max-w-full overflow-hidden">
@@ -1663,18 +1689,23 @@ const RawatJalan = () => {
                                 </div>
                                 {/* Status Dot */}
                                 {(() => {
-                                  const status = getDoctorDetailedStatus(doctor, dateRange.start);
+                                  const status = getDoctorDetailedStatus(
+                                    doctor,
+                                    dateRange.start
+                                  );
                                   const statusConfig = getStatusConfig(status);
                                   return (
-                                    <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
-                                      status === "available"
-                                        ? "bg-green-400"
-                                        : status === "full"
-                                        ? "bg-orange-400"
-                                        : status === "not_practicing"
-                                        ? "bg-gray-400"
-                                        : "bg-red-400"
-                                    }`}>
+                                    <span
+                                      className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
+                                        status === "available"
+                                          ? "bg-green-400"
+                                          : status === "full"
+                                          ? "bg-orange-400"
+                                          : status === "not_practicing"
+                                          ? "bg-gray-400"
+                                          : "bg-red-400"
+                                      }`}
+                                    >
                                       <span className="w-2 h-2 rounded-full bg-white/80"></span>
                                     </span>
                                   );
@@ -1682,13 +1713,19 @@ const RawatJalan = () => {
                               </div>
                               {/* Info & Status Container */}
                               <div className="flex-1 min-w-0 overflow-hidden">
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-semibold text-gray-800 text-base truncate text-left">
+                                <div className="flex flex-col gap-1 max-w-full">
+                                  <span
+                                    className="font-semibold text-gray-800 text-base truncate text-left block max-w-full"
+                                    title={doctor.name}
+                                    style={{ maxWidth: "100%" }}
+                                  >
                                     Dr. {doctor.name}
                                   </span>
-                                  <span className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                                  <span className="flex items-center gap-1 text-xs text-gray-500 truncate block max-w-full" style={{ maxWidth: "100%" }}>
                                     <Building2 size={12} className="text-gray-400 shrink-0" />
-                                    <span className="truncate">Poliklinik {doctor.poli_name || "N/A"}</span>
+                                    <span className="truncate block max-w-full" style={{ maxWidth: "100%" }}>
+                                      Poliklinik {doctor.poli_name || "N/A"}
+                                    </span>
                                   </span>
                                   <span className="flex items-center gap-1 text-xs text-gray-500">
                                     <User size={12} className="text-gray-400 shrink-0" />
@@ -1697,11 +1734,16 @@ const RawatJalan = () => {
                                   {/* Status Badge - Tablet/Mobile */}
                                   <div className="xl:hidden flex justify-start">
                                     {(() => {
-                                      const status = getDoctorDetailedStatus(doctor, dateRange.start);
+                                      const status = getDoctorDetailedStatus(
+                                        doctor,
+                                        dateRange.start
+                                      );
                                       const statusConfig = getStatusConfig(status);
                                       const StatusIcon = statusConfig.icon;
                                       return (
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor}`}>
+                                        <span
+                                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor}`}
+                                        >
                                           <StatusIcon size={10} className={statusConfig.iconColor} />
                                           {statusConfig.label}
                                         </span>
@@ -1713,11 +1755,16 @@ const RawatJalan = () => {
                               {/* Status Badge - PC */}
                               <div className="hidden xl:block shrink-0">
                                 {(() => {
-                                  const status = getDoctorDetailedStatus(doctor, dateRange.start);
+                                  const status = getDoctorDetailedStatus(
+                                    doctor,
+                                    dateRange.start
+                                  );
                                   const statusConfig = getStatusConfig(status);
                                   const StatusIcon = statusConfig.icon;
                                   return (
-                                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor}`}>
+                                    <span
+                                      className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor}`}
+                                    >
                                       <StatusIcon size={10} className={statusConfig.iconColor} />
                                       {statusConfig.label}
                                     </span>
@@ -1725,198 +1772,43 @@ const RawatJalan = () => {
                                 })()}
                               </div>
                               {/* Hapus Button */}
-                              <button
+                              <span
+                                role="button"
+                                tabIndex={0}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const newDoctors = [...selectedDoctors];
                                   newDoctors[sectionIdx] = null;
                                   setSelectedDoctors(newDoctors);
                                 }}
-                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-white/60 hover:bg-red-100 text-gray-400 hover:text-red-500 p-1.5 rounded-full transition-all duration-200 shadow-sm shrink-0"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.stopPropagation();
+                                    const newDoctors = [...selectedDoctors];
+                                    newDoctors[sectionIdx] = null;
+                                    setSelectedDoctors(newDoctors);
+                                  }
+                                }}
+                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-white/60 hover:bg-red-100 text-gray-400 hover:text-red-500 p-1.5 rounded-full transition-all duration-200 shadow-sm shrink-0 cursor-pointer"
                                 title="Hapus Dokter"
+                                aria-label="Hapus Dokter"
                               >
                                 <X size={16} />
-                              </button>
+                              </span>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-center p-4 rounded-xl bg-gray-50/50 hover:bg-gray-100/50 transition-all duration-200 min-h-[90px] group cursor-pointer">
+                            <div className="flex items-center justify-center p-4 rounded-xl bg-gray-50/50 hover:bg-gray-100/50 transition-all duration-200 min-h-[90px] group cursor-pointer w-full h-full">
                               <div className="flex flex-col items-center gap-2">
                                 <div className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center hover:border-blue-300 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 group-hover:scale-105">
                                   <Plus size={24} className="text-gray-400 group-hover:text-blue-500" />
                                 </div>
-                                <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600 transition-colors">
+                                <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600 transition-colors truncate block max-w-full" style={{ maxWidth: "100%" }}>
                                   Pilih Dokter
                                 </span>
                               </div>
                             </div>
                           )}
                         </button>
-
-                        {showDoctorModal && selectedSection === sectionIdx && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-gray-100 shadow-xl z-50 max-h-[300px] overflow-hidden min-w-[320px] max-w-[400px] sm:min-w-[350px] sm:max-w-[450px] md:min-w-[380px] md:max-w-[500px] animate-in slide-in-from-top-2 duration-200 backdrop-blur-sm">
-                            <div className="p-2 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-                              <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                                  <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                                    <Search size={12} className="text-white" />
-                                  </div>
-                                </div>
-                                <input
-                                  type="text"
-                                  value={doctorSearchTerm}
-                                  onChange={(e) =>
-                                    setDoctorSearchTerm(e.target.value)
-                                  }
-                                  placeholder="Cari dokter berdasarkan nama atau poliklinik..."
-                                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 shadow-sm text-sm"
-                                />
-                              </div>
-                              <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
-                                <Stethoscope size={10} />
-                                <span>
-                                  {(() => {
-                                    const availableDoctorsForSection = getAvailableDoctors(selectedSection);
-                                    const filteredCount = doctorSearchTerm 
-                                      ? availableDoctorsForSection.filter(d => 
-                                          d.name.toLowerCase().includes(doctorSearchTerm.toLowerCase()) ||
-                                          (d.poli_name && d.poli_name.toLowerCase().includes(doctorSearchTerm.toLowerCase()))
-                                        ).length
-                                      : availableDoctorsForSection.length;
-                                    return `${filteredCount} dokter tersedia`;
-                                  })()}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="overflow-y-auto max-h-[200px] doctor-list-scrollable custom-scrollbar">
-                              {(() => {
-                                const availableDoctorsForSection =
-                                  getAvailableDoctors(selectedSection);
-                                let doctorsToDisplay =
-                                  availableDoctorsForSection;
-
-                                if (doctorSearchTerm) {
-                                  doctorsToDisplay =
-                                    availableDoctorsForSection.filter((d) =>
-                                      d.name
-                                        .toLowerCase()
-                                        .includes(
-                                          doctorSearchTerm.toLowerCase()
-                                        ) ||
-                                      (d.poli_name && d.poli_name
-                                        .toLowerCase()
-                                        .includes(
-                                          doctorSearchTerm.toLowerCase()
-                                        ))
-                                    );
-                                }
-
-                                // Sort doctors: available first, then by name
-                                doctorsToDisplay.sort((a, b) => {
-                                  const statusA = getDoctorDetailedStatus(
-                                    a,
-                                    dateRange.start
-                                  );
-                                  const statusB = getDoctorDetailedStatus(
-                                    b,
-                                    dateRange.start
-                                  );
-                                  if (
-                                    statusA === "available" &&
-                                    statusB !== "available"
-                                  )
-                                    return -1;
-                                  if (
-                                    statusA !== "available" &&
-                                    statusB === "available"
-                                  )
-                                    return 1;
-                                  return a.name.localeCompare(b.name); // Alphabetical sort for same status
-                                });
-
-                                if (doctorsToDisplay.length === 0) {
-                                  return (
-                                    <div className="p-4 text-center text-gray-500">
-                                      {doctorSearchTerm ? (
-                                        <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                                          <Search
-                                            size={20}
-                                            className="text-gray-400"
-                                          />
-                                        </div>
-                                      ) : (
-                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                                          <Stethoscope
-                                            size={20}
-                                            className="text-blue-400"
-                                          />
-                                        </div>
-                                      )}
-                                      <p className="text-sm">
-                                        {doctorSearchTerm
-                                          ? "Tidak ada dokter yang cocok."
-                                          : "Tidak ada dokter tersedia."}
-                                      </p>
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <div className="p-2 grid gap-1.5">
-                                    {doctorsToDisplay.map((doc) => {
-                                      const status = getDoctorDetailedStatus(
-                                        doc,
-                                        dateRange.start
-                                      );
-                                      const statusConfig =
-                                        getStatusConfig(status);
-                                      const StatusIcon = statusConfig.icon;
-
-                                      return (
-                                        <div
-                                          key={doc.id}
-                                          onClick={() => {
-                                            handleSelectDoctor(
-                                              doc.id,
-                                              selectedSection
-                                            );
-                                            setShowDoctorModal(false);
-                                            setDoctorSearchTerm("");
-                                          }}
-                                          className="flex items-center justify-between p-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer rounded-lg transition-colors duration-150 ease-in-out border border-transparent hover:border-blue-100"
-                                        >
-                                          <div className="flex-grow pr-3 min-w-0">
-                                            <div className="flex items-start gap-3">
-                                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-medium text-sm shrink-0 shadow-sm">
-                                                {doc.name.charAt(0)}
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-gray-800 text-sm leading-tight break-words">
-                                                  Dr. {highlightMatch(doc.name, doctorSearchTerm)}
-                                                </div>
-                                                <div className="text-xs text-gray-500 truncate mt-0.5">
-                                                  Poliklinik {highlightMatch(doc.poli_name || "N/A", doctorSearchTerm)}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </div>
-                                          <div
-                                            className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center border shrink-0 ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor}`}
-                                          >
-                                            <StatusIcon
-                                              size={11}
-                                              className={`mr-1 ${statusConfig.iconColor}`}
-                                            />
-                                            {statusConfig.label}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
@@ -2086,7 +1978,7 @@ const RawatJalan = () => {
                                 >
                                   <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-3 h-full flex flex-col text-white shadow-md">
                                     <div className="flex justify-between items-start">
-                                      <span className="font-medium truncate text-base">
+                                      <span className="font-medium text-white text-base break-words">
                                         {existingAppointment.patientName}
                                       </span>
                                       <span className="bg-white/20 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full">
@@ -2770,8 +2662,8 @@ const RawatJalan = () => {
                             onChange={(e) =>
                               handleInputChange(e, "appointmentDate")
                             }
-                            onFocus={() => console.log('Date input focused')}
-                            onBlur={() => console.log('Date input blurred')}
+                            onFocus={() => console.log("Date input focused")}
+                            onBlur={() => console.log("Date input blurred")}
                             min={format(startOfToday(), "yyyy-MM-dd")}
                             disabled={!!selectedSlot}
                             className={`w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500 ${
@@ -2790,7 +2682,7 @@ const RawatJalan = () => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('Calendar button clicked'); // Debug log
+                            console.log("Calendar button clicked"); // Debug log
                             openDatePicker();
                           }}
                           onMouseDown={(e) => {
@@ -2810,9 +2702,14 @@ const RawatJalan = () => {
                           }`}
                           title="Pilih tanggal dari kalender"
                         >
-                          <Calendar size={16} className={`${
-                            !!selectedSlot ? "text-gray-400" : "text-gray-500 group-hover:text-blue-600"
-                          }`} />
+                          <Calendar
+                            size={16}
+                            className={`${
+                              !!selectedSlot
+                                ? "text-gray-400"
+                                : "text-gray-500 group-hover:text-blue-600"
+                            }`}
+                          />
                         </button>
                       </div>
                     </div>
@@ -2867,11 +2764,12 @@ const RawatJalan = () => {
                                         .includes(
                                           doctorSearchTerm.toLowerCase()
                                         ) ||
-                                      (doc.poli_name && doc.poli_name
-                                        .toLowerCase()
-                                        .includes(
-                                          doctorSearchTerm.toLowerCase()
-                                        ))
+                                      (doc.poli_name &&
+                                        doc.poli_name
+                                          .toLowerCase()
+                                          .includes(
+                                            doctorSearchTerm.toLowerCase()
+                                          ))
                                   );
 
                                   if (filteredDoctors.length === 0) {
@@ -2914,15 +2812,27 @@ const RawatJalan = () => {
                                                 {doc.name.charAt(0)}
                                               </div>
                                               <div className="flex-1 min-w-0 overflow-hidden">
-                                                <h4 className="font-medium text-gray-800 truncate">
-                                                  Dr. {highlightMatch(doc.name, doctorSearchTerm)}
+                                                <h4 className="font-medium text-gray-800 break-words flex-1">
+                                                  Dr.{" "}
+                                                  {
+                                                    doctors.find(
+                                                      (d) =>
+                                                        d.id === selectedDoctor
+                                                    )?.name
+                                                  }
                                                 </h4>
                                                 <div className="mt-1 flex items-center text-xs text-gray-500 truncate">
                                                   <Building2
                                                     size={12}
                                                     className="mr-1 shrink-0"
                                                   />
-                                                  <span className="truncate">Poliklinik {highlightMatch(doc.poli_name || "N/A", doctorSearchTerm)}</span>
+                                                  <span className="truncate">
+                                                    Poliklinik{" "}
+                                                    {highlightMatch(
+                                                      doc.poli_name || "N/A",
+                                                      doctorSearchTerm
+                                                    )}
+                                                  </span>
                                                 </div>
                                               </div>
                                             </div>
@@ -2966,7 +2876,10 @@ const RawatJalan = () => {
                                 </div>
                                 <div className="mt-1 flex items-center gap-2 min-w-0">
                                   <div className="flex items-center text-xs text-gray-500 truncate">
-                                    <Building2 size={12} className="mr-1 shrink-0" />
+                                    <Building2
+                                      size={12}
+                                      className="mr-1 shrink-0"
+                                    />
                                     <span className="truncate">{`Poliklinik ${
                                       doctors.find(
                                         (d) => d.id === selectedDoctor
@@ -3401,6 +3314,136 @@ const RawatJalan = () => {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Render modal dokter pakai portal */}
+      {showDoctorModal && selectedSection !== null && doctorModalAnchor && createPortal(
+        <div
+          ref={doctorModalRefs[selectedSection]}
+          style={{
+            position: 'absolute',
+            zIndex: 9999,
+            left: doctorModalAnchor.getBoundingClientRect().left + window.scrollX,
+            top: doctorModalAnchor.getBoundingClientRect().bottom + window.scrollY,
+            width: doctorModalAnchor.offsetWidth,
+            minWidth: 320,
+            maxWidth: 500,
+          }}
+          className="bg-white rounded-lg border border-gray-100 shadow-xl max-h-[300px] overflow-hidden animate-in slide-in-from-top-2 duration-200 backdrop-blur-sm"
+        >
+          {/* ...modal content, copy dari sebelumnya... */}
+          <div className="p-2 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <Search size={12} className="text-white" />
+                </div>
+              </div>
+              <input
+                type="text"
+                value={doctorSearchTerm}
+                onChange={(e) => setDoctorSearchTerm(e.target.value)}
+                placeholder="Cari dokter berdasarkan nama atau poliklinik..."
+                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 shadow-sm text-sm"
+              />
+            </div>
+            <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+              <Stethoscope size={10} />
+              <span>
+                {(() => {
+                  const availableDoctorsForSection = getAvailableDoctors(selectedSection);
+                  const filteredCount = doctorSearchTerm
+                    ? availableDoctorsForSection.filter(
+                        (d) =>
+                          d.name.toLowerCase().includes(doctorSearchTerm.toLowerCase()) ||
+                          (d.poli_name && d.poli_name.toLowerCase().includes(doctorSearchTerm.toLowerCase()))
+                      ).length
+                    : availableDoctorsForSection.length;
+                  return `${filteredCount} dokter tersedia`;
+                })()}
+              </span>
+            </div>
+          </div>
+          <div className="overflow-y-auto max-h-[200px] doctor-list-scrollable custom-scrollbar">
+            {(() => {
+              const availableDoctorsForSection = getAvailableDoctors(selectedSection);
+              let doctorsToDisplay = availableDoctorsForSection;
+              if (doctorSearchTerm) {
+                doctorsToDisplay = availableDoctorsForSection.filter(
+                  (d) =>
+                    d.name.toLowerCase().includes(doctorSearchTerm.toLowerCase()) ||
+                    (d.poli_name && d.poli_name.toLowerCase().includes(doctorSearchTerm.toLowerCase()))
+                );
+              }
+              doctorsToDisplay.sort((a, b) => {
+                const statusA = getDoctorDetailedStatus(a, dateRange.start);
+                const statusB = getDoctorDetailedStatus(b, dateRange.start);
+                if (statusA === "available" && statusB !== "available") return -1;
+                if (statusA !== "available" && statusB === "available") return 1;
+                return a.name.localeCompare(b.name);
+              });
+              if (doctorsToDisplay.length === 0) {
+                return (
+                  <div className="p-4 text-center text-gray-500">
+                    {doctorSearchTerm ? (
+                      <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                        <Search size={20} className="text-gray-400" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                        <Stethoscope size={20} className="text-blue-400" />
+                      </div>
+                    )}
+                    <p className="text-sm">
+                      {doctorSearchTerm ? "Tidak ada dokter yang cocok." : "Tidak ada dokter tersedia."}
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <div className="p-2 grid gap-1.5">
+                  {doctorsToDisplay.map((doc) => {
+                    const status = getDoctorDetailedStatus(doc, dateRange.start);
+                    const statusConfig = getStatusConfig(status);
+                    const StatusIcon = statusConfig.icon;
+                    return (
+                      <div
+                        key={doc.id}
+                        onClick={() => {
+                          handleSelectDoctor(doc.id, selectedSection);
+                          setShowDoctorModal(false);
+                          setDoctorSearchTerm("");
+                        }}
+                        className="flex items-center justify-between p-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer rounded-lg transition-colors duration-150 ease-in-out border border-transparent hover:border-blue-100"
+                      >
+                        <div className="flex-grow pr-3 min-w-0">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-medium text-sm shrink-0 shadow-sm">
+                              {doc.name.charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                              <div className="font-medium text-gray-800 text-sm leading-tight break-words">
+                                Dr. {highlightMatch(doc.name, doctorSearchTerm)}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate mt-0.5">
+                                Poliklinik {highlightMatch(doc.poli_name || "N/A", doctorSearchTerm)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center border shrink-0 ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor}`}>
+                          <StatusIcon size={11} className={`mr-1 ${statusConfig.iconColor}`} />
+                          {statusConfig.label}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </div>,
+        document.body
       )}
     </PageTemplate>
   );

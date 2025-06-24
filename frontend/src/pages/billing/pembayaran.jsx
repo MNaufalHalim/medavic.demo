@@ -692,7 +692,7 @@ function Pembayaran() {
                     {/* Back button untuk tablet */}
                     <button 
                       onClick={handleBackToList}
-                      className="xl:hidden flex items-center gap-1.5 sm:gap-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform"
+                      className="xl:hidden flex items-center gap-1.5 sm:gap-2 bg-white text-blue-600 hover:bg-gray-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform"
                     >
                       <ArrowLeft size={14} className="sm:w-4 sm:h-4" />
                       Kembali
@@ -746,14 +746,14 @@ function Pembayaran() {
                       )
                     })()}
                     <button 
-                      className="flex items-center gap-1.5 sm:gap-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform" 
+                      className="flex items-center gap-1.5 sm:gap-2 bg-white text-blue-600 hover:bg-gray-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform" 
                       onClick={handlePrint}
                     >
                       <Printer size={14} className="sm:w-4 sm:h-4" />
                       Print
                     </button>
                     <button 
-                      className="flex items-center gap-1.5 sm:gap-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform" 
+                      className="flex items-center gap-1.5 sm:gap-2 bg-white text-blue-600 hover:bg-gray-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform" 
                       onClick={handleClose}
                     >
                       <XCircle size={14} className="sm:w-4 sm:h-4" />
@@ -851,7 +851,7 @@ function Pembayaran() {
                                   <h4 className="font-bold text-gray-900 text-xs sm:text-sm">{item.item_name}</h4>
                                   <div className="flex items-center gap-3 sm:gap-4 mt-1.5 sm:mt-2 text-xs text-gray-600">
                                     <span className="flex items-center">
-                                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full mr-1 sm:mr-1.5"></div>
+                                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-1 sm:mr-1.5"></div>
                                       Qty: {item.quantity}
                                     </span>
                                   </div>
@@ -897,7 +897,7 @@ function Pembayaran() {
                                   </h4>
                                   <div className="flex items-center gap-3 sm:gap-4 mt-1.5 sm:mt-2 text-xs text-gray-600">
                                     <span className="flex items-center">
-                                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full mr-1 sm:mr-1.5"></div>
+                                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-1 sm:mr-1.5"></div>
                                       Qty: {item.quantity}
                                     </span>
                                     <span className="flex items-center">
@@ -970,8 +970,8 @@ function Pembayaran() {
                             onClick={() => setShowPaymentForm(!showPaymentForm)}
                             className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center ${
                               showPaymentForm 
-                                ? 'bg-amber-500 text-white shadow-lg' 
-                                : 'bg-white/80 text-amber-700 border border-amber-200 hover:bg-amber-500 hover:text-white'
+                                ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100' 
+                                : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg hover:from-amber-600 hover:to-orange-700'
                             }`}
                           >
                             {showPaymentForm ? <XCircle size={14} className="mr-1.5 sm:mr-2 sm:w-4 sm:h-4" /> : <Plus size={14} className="mr-1.5 sm:mr-2 sm:w-4 sm:h-4" />}

@@ -154,7 +154,7 @@ const DoctorInfoForm = ({ doctor, onChange, isEditing, polyclinics, doctors = []
               )}
               {doctor.license_no && doctor.license_no.length > 0 && !/^[A-Za-z0-9\-\.\/]+$/.test(doctor.license_no) && (
                 <p className="mt-1 text-xs text-red-500">
-                  Nomor SIP/STR hanya boleh berisi huruf, angka, tanda hubung (-), titik (.), dan garis miring (/).
+                  Nomor SIP/STR dapat berisi huruf, angka, tanda hubung (-), titik (.), dan garis miring (/).
                 </p>
               )}
               {doctor.license_no && doctor.license_no.length >= 6 && doctor.license_no.length <= 20 && /^[A-Za-z0-9\-\.\/]+$/.test(doctor.license_no) && (() => {

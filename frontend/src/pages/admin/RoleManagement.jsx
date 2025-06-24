@@ -332,41 +332,37 @@ const RoleManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       {/* Header Section */}
-      <div className="mb-6 bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 text-white shadow-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center">
-              <Shield className="mr-3" size={28} />
-              Role & Privilege Management
-            </h1>
-            <p className="text-blue-100 mt-1">Kelola peran dan hak akses pengguna</p>
-          </div>
-          <div className="flex space-x-3">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-xs text-blue-100">Total Roles</div>
-              <div className="text-xl font-bold">{roles.length}</div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+            <Shield className="text-blue-600" size={32} />
+            Manajemen Role & Hak Akses
+          </h1>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">Kelola peran dan hak akses untuk setiap pengguna.</p>
+        </div>
+        <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm bg-white border border-gray-200 rounded-lg px-3 py-2">
+              <span className="font-bold text-gray-700">{roles.length}</span>
+              <span className="text-gray-500">Total Role</span>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-xs text-blue-100">System Roles</div>
-              <div className="text-xl font-bold">{roles.filter(r => r.is_system === 1).length}</div>
+            <div className="flex items-center gap-2 text-sm bg-white border border-gray-200 rounded-lg px-3 py-2">
+              <span className="font-bold text-blue-600">{roles.filter(r => r.is_system === 1).length}</span>
+              <span className="text-gray-500">Role Sistem</span>
             </div>
-          </div>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="grid grid-cols-12 gap-6">
         {/* Role List */}
-        <div className="w-full lg:w-80 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-100 flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-              <Shield className="mr-2 text-blue-600" size={20} />
+        <div className="col-span-12 lg:col-span-4 bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+              <Shield size={20} className="text-blue-600"/>
               Daftar Role
             </h2>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => {
                 setModalMode('create');
                 setRoleForm({ role_name: '', description: '' });
@@ -375,7 +371,7 @@ const RoleManagement = () => {
               className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm hover:shadow-md transition-all duration-200"
             >
               <Plus size={18} />
-            </motion.button>
+            </button>
           </div>
           
           <div className="divide-y divide-gray-100 max-h-[calc(100vh-280px)] overflow-y-auto">
@@ -449,7 +445,7 @@ const RoleManagement = () => {
         </div>
 
         {/* Privileges Section */}
-        <div className="flex-1">
+        <div className="col-span-12 lg:col-span-8">
           {selectedRole ? (
             <div className="space-y-6">
               <div className="bg-white rounded-xl shadow-sm p-6">

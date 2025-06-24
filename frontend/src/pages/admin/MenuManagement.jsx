@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import config from '../../config';
-import { Menu as MenuIcon, Plus, Edit2, Trash2, X, ChevronDown, ChevronRight, Search, Check, Loader2, FolderOpen, FolderClosed } from 'lucide-react';
+import { Menu as MenuIcon, Plus, Edit2, Trash2, X, ChevronDown, ChevronRight, Search, Check, Loader2, FolderOpen, FolderClosed, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { useSortable, SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
@@ -23,7 +23,7 @@ const EditableCell = ({ value, onChange, placeholder }) => {
   useEffect(() => { setLocalValue(value); }, [value]);
   return editing ? (
     <input
-      className="bg-transparent border-0 border-b-2 border-blue-200 focus:border-blue-500 px-2 py-1.5 text-sm w-full outline-none transition-all font-medium text-gray-800 rounded-sm focus:bg-blue-50"
+      className="bg-blue-50 border-0 border-b-2 border-blue-400 focus:border-blue-500 px-2 py-1 text-sm w-full outline-none transition-all font-medium text-gray-800 rounded-sm"
       value={localValue}
       autoFocus
       onChange={e => setLocalValue(e.target.value)}
@@ -32,13 +32,13 @@ const EditableCell = ({ value, onChange, placeholder }) => {
       placeholder={placeholder}
     />
   ) : (
-    <span className="block px-2 py-1.5 min-h-[32px] cursor-pointer hover:bg-blue-50 rounded-md text-gray-800 font-medium transition-all flex items-center" onClick={() => setEditing(true)}>
+    <span className="block px-2 py-1 min-h-[30px] cursor-pointer hover:bg-gray-100 rounded-md text-gray-700 font-medium transition-all flex items-center text-sm" onClick={() => setEditing(true)}>
       {value || <span className="text-gray-400 italic">{placeholder}</span>}
     </span>
   );
 };
 
-function SortableMenuRow({ menu, onEdit, onDelete, onAddSub, style, isDragging, isOver, expandedMenus, onToggleExpand, allMenus, dropPosition, ...props }) {
+function SortableMenuRow({ menu, onEdit, onAddSub, style, isDragging, isOver, expandedMenus, onToggleExpand, allMenus, dropPosition, ...props }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging: dndDragging } = useSortable({ id: menu.id });
   
   // Check if menu has children by looking for other menus with this menu as parent
@@ -55,11 +55,11 @@ function SortableMenuRow({ menu, onEdit, onDelete, onAddSub, style, isDragging, 
         transition,
         opacity: dndDragging ? 0.5 : 1,
         zIndex: dndDragging ? 50 : 1,
-        boxShadow: dndDragging ? '0 8px 32px 0 rgba(37, 99, 235, 0.2)' : '',
-        background: dndDragging ? 'rgba(219, 234, 254, 0.95)' : '',
+        boxShadow: dndDragging ? '0 4px 16px 0 rgba(37, 99, 235, 0.15)' : '',
+        background: dndDragging ? 'rgba(239, 246, 255, 0.95)' : '',
       }}
-      className={`flex items-center gap-3 py-4 px-4 rounded-2xl group shadow-sm mb-3 bg-white border border-gray-100 hover:shadow-lg transition-all duration-200 ${dndDragging ? 'ring-2 ring-blue-400 scale-105' : ''} ${isOver ? 'bg-blue-50 border-blue-300 shadow-xl' : ''}`}
-      whileHover={{ scale: dndDragging ? 1.05 : 1.02 }}
+      className={`flex items-center gap-3 py-2 px-3 rounded-lg group shadow-sm mb-2 bg-white border border-transparent hover:border-gray-200 hover:shadow-md transition-all duration-200 ${dndDragging ? 'ring-2 ring-blue-300 scale-102' : ''} ${isOver ? 'bg-blue-50/50' : ''}`}
+      whileHover={{ scale: dndDragging ? 1.02 : 1.01 }}
       {...props}
     >
       {/* Drop preview overlay */}
@@ -96,33 +96,26 @@ function SortableMenuRow({ menu, onEdit, onDelete, onAddSub, style, isDragging, 
         </div>
       )}
       <div className="mr-3 p-2 bg-blue-50 rounded-xl">
-        <span className="text-blue-600">{ICON_MAP[menu.icon] || <MenuIcon size={20} />}</span>
+        <span className="text-blue-600">{ICON_MAP[menu.icon] || <MenuIcon size={18} />}</span>
       </div>
-      <div style={{ marginLeft: menu.level * 32 }} className="flex-1 flex gap-4 items-center">
-        <div className="flex-1">
+      <div style={{ paddingLeft: menu.level * 24 }} className="flex-1 flex gap-4 items-center">
+        <div className="w-1/3">
           <EditableCell value={menu.menu_name} onChange={v => onEdit(menu.id, 'menu_name', v)} placeholder="Nama Menu" />
         </div>
-        <div className="flex-1">
+        <div className="w-1/3">
           <EditableCell value={menu.menu_path} onChange={v => onEdit(menu.id, 'menu_path', v)} placeholder="Path" />
         </div>
-        <div className="w-24">
+        <div className="w-48">
           <EditableCell value={menu.icon} onChange={v => onEdit(menu.id, 'icon', v)} placeholder="Icon" />
         </div>
       </div>
-      <div className="flex gap-2 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-200">
+      <div className="flex gap-1 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-200">
         <button 
           onClick={() => onAddSub(menu.id)} 
           className="p-2 text-green-600 hover:bg-green-100 rounded-xl transition-all hover:scale-110" 
           title="Tambah Sub-menu"
         >
           <Plus size={18} />
-        </button>
-        <button 
-          onClick={() => onDelete(menu.id)} 
-          className="p-2 text-red-600 hover:bg-red-100 rounded-xl transition-all hover:scale-110" 
-          title="Hapus Menu"
-        >
-          <Trash2 size={18} />
         </button>
       </div>
     </motion.div>
@@ -166,6 +159,20 @@ const MenuManagement = () => {
 
   useEffect(() => { fetchMenus(); }, []);
   useEffect(() => { setLocalMenus(menus); setHasChanges(false); }, [menus]);
+
+  const handleAddNewRootMenu = () => {
+    const newId = 'new-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const newMenu = {
+      id: newId,
+      menu_name: '',
+      menu_path: '',
+      icon: '',
+      parent_id: null,
+      order_number: localMenus.filter(m => !m.parent_id).length + 1,
+    };
+    setLocalMenus(menus => [...menus, newMenu]);
+    setHasChanges(true);
+  };
 
   const fetchMenus = async () => {
     setLoading(true);
@@ -320,12 +327,6 @@ const MenuManagement = () => {
     }
   };
 
-  // Delete menu
-  const handleDelete = (id) => {
-    setLocalMenus(menus => menus.filter(m => m.id !== id && m.parent_id !== id));
-    setHasChanges(true);
-  };
-
   // Save all changes
   const handleSaveAll = async () => {
     try {
@@ -389,7 +390,7 @@ const MenuManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-6">
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
@@ -401,148 +402,152 @@ const MenuManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-6">
-      <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded-3xl p-8 text-white shadow-2xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-              <MenuIcon size={40} className="text-white drop-shadow" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold flex items-center mb-2">Manajemen Menu</h1>
-              <p className="text-blue-100 text-lg mb-2">Drag & drop untuk urutkan/nested, klik untuk edit langsung</p>
-              <div className="flex items-center gap-4 text-blue-100 text-sm">
-                <span className="flex items-center gap-1">
-                  <FolderClosed size={14} /> Klik folder untuk buka/tutup sub-menu
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-lg">⋮⋮</span> Drag untuk pindahkan
-                </span>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+            <MenuIcon className="text-blue-600" size={32} />
+            Manajemen Menu
+          </h1>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">Atur struktur dan urutan menu navigasi aplikasi.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleAddNewRootMenu}
+            className="px-4 py-2 rounded-lg font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 transition-all duration-200 flex items-center gap-2 text-sm shadow-md hover:shadow-lg"
+          >
+            <Plus size={16} />
+            Tambah Parent
+          </button>
           <button
             onClick={handleSaveAll}
             disabled={!hasChanges || loading}
-            className={`px-8 py-4 rounded-2xl font-bold text-white shadow-lg transition-all duration-200 flex items-center gap-2 ${hasChanges && !loading ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105' : 'bg-gray-400 cursor-not-allowed'}`}
+            className={`px-6 py-2 rounded-lg font-bold transition-all duration-200 flex items-center gap-2 text-sm shadow-md hover:shadow-lg ${
+              hasChanges && !loading 
+                ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
           >
             {loading ? (
-              <>
-                <Loader2 className="animate-spin h-5 w-5" />
-                Menyimpan...
-              </>
-            ) : hasChanges ? (
-              '💾 Simpan Perubahan'
+              <Loader2 className="animate-spin h-5 w-5" />
             ) : (
-              '✓ Tersimpan'
+              <Save size={16} />
             )}
+            {loading ? 'Menyimpan...' : (hasChanges ? 'Simpan Perubahan' : 'Tersimpan')}
           </button>
         </div>
       </div>
       
-      <div className="w-full max-w-4xl mx-auto">
+      <div className="w-full">
         <AnimatePresence>
           {notif.show && (
             <motion.div
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              className={`mb-6 p-4 rounded-2xl flex items-center gap-3 shadow-lg ${notif.type === 'success' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}
+              className={`mb-4 p-3 rounded-lg flex items-center gap-3 shadow-md border ${notif.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
             >
-              {notif.type === 'success' ? <Check size={20} /> : <X size={20} />}
-              <span className="font-medium">{notif.message}</span>
-              <button onClick={() => setNotif({ show: false })} className="ml-auto text-xl font-bold hover:opacity-70 transition-opacity">&times;</button>
+              {notif.type === 'success' ? <Check size={18} /> : <X size={18} />}
+              <span className="font-medium text-sm">{notif.message}</span>
+              <button onClick={() => setNotif({ show: false })} className="ml-auto text-lg font-bold hover:opacity-70 transition-opacity">&times;</button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200/80">
           {flatMenus.length === 0 ? (
-            <div className="text-center py-16">
-              <MenuIcon size={64} className="text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">Belum ada menu</h3>
-              <p className="text-gray-500">Mulai dengan menambahkan menu pertama Anda</p>
+            <div className="text-center py-12">
+              <MenuIcon size={48} className="text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-1">Belum ada menu</h3>
+              <p className="text-gray-500 text-sm">Klik "Tambah Menu" untuk memulai.</p>
             </div>
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
-            >
-              {/* Drop zone for top position */}
-              {overId && dropPosition === 'above' && flatMenus.findIndex(m => m.id === overId) === 0 && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="h-4 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full mb-4 mx-4 opacity-80 shadow-lg"
-                />
-              )}
-              
-              <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-                {flatMenus.map((menu, index) => (
-                  <div key={menu.id} className="relative">
-                    {overId === menu.id && dropPosition === 'above' && index > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="h-4 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full mb-4 mx-4 opacity-80 shadow-lg"
+            <>
+              {/* Header for the list */}
+              <div className="flex items-center gap-3 py-2 px-4 text-xs font-bold text-gray-500 uppercase border-b-2 border-gray-100 mb-2">
+                <div className="w-[128px]"> {/* Spacer for handle, expander, icon */}
+                  Menu
+                </div>
+                <div className="w-1/3">Path</div>
+                <div className="w-48">Icon</div>
+                <div className="flex-1"></div> {/* Spacer for actions */}
+              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+              >
+                {/* Drop zone for top position */}
+                {overId && dropPosition === 'above' && flatMenus.findIndex(m => m.id === overId) === 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="h-1.5 bg-blue-500 rounded-full mb-1 mx-4 opacity-90 shadow-lg"
+                  />
+                )}
+                
+                <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+                  {flatMenus.map((menu, index) => (
+                    <div key={menu.id} className="relative">
+                      {overId === menu.id && dropPosition === 'above' && index > 0 && (
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="h-1.5 bg-blue-500 rounded-full mb-1 mx-4 opacity-90 shadow-lg"
+                        />
+                      )}
+                      
+                      {/* Drop preview for this item */}
+                      {overId === menu.id && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className={`absolute inset-0 rounded-2xl pointer-events-none ${
+                            dropPosition === 'above' 
+                              ? 'bg-blue-100/30 border-t-4 border-blue-400' 
+                              : 'bg-blue-100/30 border-b-4 border-blue-400'
+                          }`}
+                          style={{ zIndex: -1 }}
+                        />
+                      )}
+                      
+                      <SortableMenuRow
+                        menu={menu}
+                        onEdit={handleInlineEdit}
+                        onAddSub={handleAddSub}
+                        isDragging={activeId === menu.id}
+                        isOver={overId === menu.id}
+                        expandedMenus={expandedMenus}
+                        onToggleExpand={handleToggleExpand}
+                        allMenus={localMenus}
+                        dropPosition={dropPosition}
                       />
-                    )}
-                    
-                    {/* Drop preview for this item */}
-                    {overId === menu.id && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className={`absolute inset-0 rounded-2xl pointer-events-none ${
-                          dropPosition === 'above' 
-                            ? 'bg-blue-100/30 border-t-4 border-blue-400' 
-                            : 'bg-blue-100/30 border-b-4 border-blue-400'
-                        }`}
-                        style={{ zIndex: -1 }}
-                      />
-                    )}
-                    
-                    <SortableMenuRow
-                      menu={menu}
-                      onEdit={handleInlineEdit}
-                      onDelete={handleDelete}
-                      onAddSub={handleAddSub}
-                      isDragging={activeId === menu.id}
-                      isOver={overId === menu.id}
-                      expandedMenus={expandedMenus}
-                      onToggleExpand={handleToggleExpand}
-                      allMenus={localMenus}
-                      dropPosition={dropPosition}
-                    />
-                    {overId === menu.id && dropPosition === 'below' && (
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="h-4 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full mt-4 mx-4 opacity-80 shadow-lg"
-                      />
-                    )}
-                  </div>
-                ))}
-              </SortableContext>
-              <DragOverlay dropAnimation={{ duration: 300, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
-                {activeId ? (
-                  <div className="flex items-center gap-3 py-4 px-4 rounded-2xl shadow-2xl bg-blue-50/90 border-2 border-blue-400 ring-4 ring-blue-400/20 backdrop-blur-sm transform rotate-2">
-                    <span className="cursor-grab text-blue-500 select-none mr-1 font-bold text-lg">⋮⋮</span>
-                    <div className="mr-3 p-2 bg-blue-100 rounded-xl">
-                      <span className="text-blue-700">{ICON_MAP[flatMenus.find(m => m.id === activeId)?.icon] || <MenuIcon size={20} />}</span>
+                      {overId === menu.id && dropPosition === 'below' && (
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="h-1.5 bg-blue-500 rounded-full mt-1 mx-4 opacity-90 shadow-lg"
+                        />
+                      )}
                     </div>
-                    <span className="font-bold text-blue-700 text-lg">{flatMenus.find(m => m.id === activeId)?.menu_name || ''}</span>
-                    <div className="ml-2 px-2 py-1 bg-blue-200 rounded-full text-xs text-blue-700 font-medium">
-                      Drop here
+                  ))}
+                </SortableContext>
+                <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
+                  {activeId ? (
+                    <div className="flex items-center gap-3 py-2 px-3 rounded-lg shadow-2xl bg-white/90 border border-blue-400 ring-2 ring-blue-400/20 backdrop-blur-sm transform rotate-1 scale-105">
+                      <span className="cursor-grabbing text-blue-600 select-none mr-1 font-bold text-lg">⋮⋮</span>
+                      <div className="mr-2 p-2 bg-blue-100 rounded-lg">
+                        <span className="text-blue-700">{ICON_MAP[flatMenus.find(m => m.id === activeId)?.icon] || <MenuIcon size={18} />}</span>
+                      </div>
+                      <span className="font-bold text-blue-800">{flatMenus.find(m => m.id === activeId)?.menu_name || ''}</span>
                     </div>
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            </>
           )}
         </div>
       </div>
