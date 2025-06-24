@@ -1497,6 +1497,31 @@ const RawatJalan = () => {
   // State untuk anchor posisi modal
   const [doctorModalAnchor, setDoctorModalAnchor] = useState(null);
 
+  // Tambahkan fungsi untuk cek apakah slot sudah lewat
+  const isSlotExpired = (slotDate, slotTime) => {
+    const nowDate = format(now, "yyyy-MM-dd");
+    const slotDateStr = format(slotDate, "yyyy-MM-dd");
+    if (slotDateStr < nowDate) return true;
+    if (slotDateStr > nowDate) return false;
+    // Jika hari ini, cek jam
+    const nowHour = parseInt(format(now, "HH"));
+    const nowMinute = parseInt(format(now, "mm"));
+    const [slotHour, slotMinute] = slotTime.split(":").map(Number);
+    if (slotHour < nowHour) return true;
+    if (slotHour === nowHour && slotMinute <= nowMinute) return true;
+    return false;
+  };
+
+  // Komponen visual brickade/striped untuk expired
+  const ExpiredSlotOverlay = () => (
+    <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+      <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#f3f4f6_10px,#f3f4f6_20px)] opacity-40 rounded-lg"></div>
+      <div className="relative z-10">
+        <span className="bg-gray-200 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 shadow-sm">Expired</span>
+      </div>
+    </div>
+  );
+
   return (
     <PageTemplate>
       <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
@@ -1997,26 +2022,34 @@ const RawatJalan = () => {
                               isAvailable &&
                               !existingAppointment &&
                               doctor && (
-                                <button
-                                  onClick={() =>
-                                    handleSlotClick({
-                                      time: slot.time,
-                                      date: dateRange.start,
-                                      doctorId: doctor.id,
-                                      doctor: doctor,
-                                    })
-                                  }
-                                  className="absolute inset-0 z-10 flex items-center justify-center p-3 group"
-                                >
-                                  <div className="border-2 border-dashed border-gray-200 rounded-lg w-full h-full flex items-center justify-center group-hover:border-blue-300 group-hover:bg-blue-50/50 transition-all duration-200">
-                                    <div className="flex items-center gap-2 text-gray-400 transition-all duration-200 transform group-hover:scale-105 group-hover:text-blue-600">
-                                      <Plus size={16} />
-                                      <span className="font-medium text-sm">
-                                        Kunjungan
-                                      </span>
+                                isSlotExpired(dateRange.start, slot.time) ? (
+                                  <div className="absolute inset-0 z-10">
+                                    <div className="border-2 border-dashed border-gray-200 rounded-lg w-full h-full bg-gray-100 relative">
+                                      <ExpiredSlotOverlay />
                                     </div>
                                   </div>
-                                </button>
+                                ) : (
+                                  <button
+                                    onClick={() =>
+                                      handleSlotClick({
+                                        time: slot.time,
+                                        date: dateRange.start,
+                                        doctorId: doctor.id,
+                                        doctor: doctor,
+                                      })
+                                    }
+                                    className="absolute inset-0 z-10 flex items-center justify-center p-3 group"
+                                  >
+                                    <div className="border-2 border-dashed border-gray-200 rounded-lg w-full h-full flex items-center justify-center group-hover:border-blue-300 group-hover:bg-blue-50/50 transition-all duration-200">
+                                      <div className="flex items-center gap-2 text-gray-400 transition-all duration-200 transform group-hover:scale-105 group-hover:text-blue-600">
+                                        <Plus size={16} />
+                                        <span className="font-medium text-sm">
+                                          Kunjungan
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </button>
+                                )
                               )}
                           </div>
                         );

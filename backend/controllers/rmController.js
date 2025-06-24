@@ -203,10 +203,10 @@ const appointmentController = {
       }
 
       // Validate input vitals
-      if (!height || !weight || !heart_rate || !blood_sugar || !temperature || !complaint) {
+      if (!complaint) {
         return res.status(400).json({
           status: 'error',
-          message: 'Vitals (height, weight, heart rate, blood sugar, temperature) and complaint are required'
+          message: 'Keluhan wajib diisi'
         });
       }
 
@@ -248,11 +248,11 @@ const appointmentController = {
           doctor_id,
           complaint,
           notes || null,
-          height,
-          weight,
-          heart_rate,
-          blood_sugar,
-          temperature
+          height || null,
+          weight || null,
+          heart_rate || null,
+          blood_sugar || null,
+          temperature || null
         ]
       );
 
